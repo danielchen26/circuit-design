@@ -23,7 +23,7 @@ def multiple_replace(adict, text):
 def permu_search_gen(bf,df):
     '''
     bf: input of the PyEDA binary function (simplified by espresso_tts);
-    df: the external library loaded for the origin NAND gate 
+    df: the external library loaded for the origin NAND gate
     '''
     import pyeda.boolalg.expr as expr
     all_permu = list(itertools.permutations('abcd',4))
