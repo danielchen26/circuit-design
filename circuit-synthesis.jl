@@ -21,25 +21,6 @@ println("x = ", getvalue(x))
 println("y = ", getvalue(y))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #            Model Formulation
 # -----------------------------------------
 
