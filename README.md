@@ -9,5 +9,5 @@
 - plasmid_dict.py:  is the processing /database/document.json which is a corrected version of the output of the Cello2 plasmids database.
 - logic_fun.py : functions collections module
 - logic_BESS.py: Generating 4-1 boolean functions with optimal network of NOR gates from BESS NAND gates library.
-- 
+- NOR_df.csv: The generated 4input 1ouput optimal NOR gates network database
 
