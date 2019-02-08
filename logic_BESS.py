@@ -9,95 +9,70 @@ import re, pyeda.boolalg.expr as expr
 import logic_fun as lf
 
 
-# ---------------------------  From BESS database -----------------------------
+# ---------------------------  Importing BESS NAND database -----------------------------
 # library of optimial gates
-df = pd.read_csv("~/Downloads/convertcsv.csv")
-df = df.replace(r'\r\n', ',', regex = True)
-df[['Optimal Network']]
+df = pd.read_csv("database/BESS_NAND.csv")
+df = df.replace(r'\r\n', ',', regex = True)# modify df[['Optimal Network']] column
 
 
-
-# --------------------------   Creating all boolean functions --------------------------------
-# -------------creating all possible binary output --------------
-# ---output binary---
-lst = list(itertools.product([0, 1], repeat=16))
-n_lst = ''.join([str(i) for i in lst[0]])
-
-test_tt = []
-for each_tp in lst:
-    new_tp = ''.join([str(i) for i in each_tp])
-    test_tt.append(new_tp)
+# ------------------- Generating a dictionary of minimal dnf design of each "Num_fun" of boolean functions
+Num_fun, Boolean_dict = lf.Boolean_expresso_gen()
+# convertion dict which switches 'Or' and 'And'
+convertion = dict([('Or', 'And'),('And', 'Or')])
 
 
-out_b = np.array(test_tt)
-len(out_b)# total number possible function
-
-# ---input binary ----
-# in_b = ttvars('x', 4)
-a,b,c,d= map(exprvar, "abcd")
-in_b = farray([a,b,c,d])
-
-
-# Logic minimization is known to be an NP-complete problem. It is equivalent to ﬁnding a minimal-cost set of subsets of a set 𝑆 that covers 𝑆. This is sometimes called the “paving problem”, because it is conceptually similar to ﬁnding the cheapest conﬁguration of tiles that cover a ﬂoor. Due to the complexity of this operation, PyEDA uses a C extension to the famous Berkeley Espresso library 1 .
-
-# -- espresso_tts function to ﬁnd a low-cost, equivalent Boolean expression.
-Boolean_dict = dict()
-for each_outb in out_b:
-    fi = truthtable(in_b, each_outb)
-    fim = espresso_tts(fi)
-    Boolean_dict[each_outb] = fim
-Boolean_dict
-# Data = {'Binary': Boolean_dict.keys(), 'Boolean_fun': Boolean_dict.values()}
-# pd.DataFrame.from_dict(Data, orient='index')
+# Creating NOR optimal net database(takes quite a bit of time!!!)
+database = []
+for func, expression in Boolean_dict.items():
+#     print("The {}\n boolean function {}\n has minimal tts: {}".format(t, func, expression) )
+    
+    # converted expression
+    func_converted = expr.expr(lf.multiple_replace(convertion, str(expression[0])))
+    
+    # Final output of the NOR gates optimal network of the input boolean fucntion (1."And" "Or" Switched )
+    Opt_NOR_net = lf.permu_search_gen(func_converted,df)
+    
+    data = np.append([func,expression],Opt_NOR_net)
+    database.append(list(data))
 
 
+NOR_database = np.array(database)
 
-ex1 = Boolean_dict['1110101011111111'][0].to_ast()
-int('1110101011111111',2)
-
-
-
-
-
-exchange = dict([('Or', 'And'),
-                     ('And', 'Or')])
-
-# test example
-rs = str(Boolean_dict['1110101011111111'][0])
-Boolean_dict['1110101011111111'][0]
-
-
-
-
-# converted expression
-rs_result = expr.expr(lf.multiple_replace(exchange, rs))
-
-
-
-# Final output of the NOR gates optimal network of the input boolean fucntion (1."And" "Or" Switched )
-lf.permu_search_gen(rs_result,df)
-
-
-
-
-# result truthtable (not used)
-rs_tt = expr2truthtable(rs_result, df)
-
-# truthtable list
-tt_list = list (rs_result.iter_relation())
-# truthtable binary Represenation
-bbr = ''.join([str(i[1]) for i in tt_list])
-# truthtable integer Represenation
-intr = int(bbr,2)
-intr
-
-
-# this example find a optimal network
-opt_net = df[df['Integer'] == intr]
-opt_net['Optimal Network']
-
-
-# -----------------------  Converting optimal Network expression in term of NOR gate
-# Corresponds to the specific permuation we convert the optimal Network back using that permutation
-opt_struct = opt_net.values[0][3]
-opt_struct.replace('NAND','NOR')
+NOR_df = pd.DataFrame({'Binary':NOR_database[:,0],'Expresso_tts':NOR_database[:,1],'Num_gates':NOR_database[:,2],'Optimal_net':NOR_database[:,3]})
+NOR_df.to_csv("NOR_df.csv", index=False)
+# # test example
+# rs = str(Boolean_dict['1110101011111111'][0])
+# Boolean_dict['1110101011111111'][0]
+#
+#
+# # converted expression
+# convertion = dict([('Or', 'And'),('And', 'Or')])
+# rs_converted = expr.expr(lf.multiple_replace(convertion, rs))
+#
+# # Final output of the NOR gates optimal network of the input boolean fucntion (1."And" "Or" Switched )
+# lf.permu_search_gen(rs_converted,df)
+#
+#
+#
+#
+# # result truthtable (not used)
+# rs_tt = expr2truthtable(rs_result, df)
+#
+# # truthtable list
+# tt_list = list (rs_result.iter_relation())
+# # truthtable binary Represenation
+# bbr = ''.join([str(i[1]) for i in tt_list])
+# # truthtable integer Represenation
+# intr = int(bbr,2)
+# intr
+#
+#
+# # this example find a optimal network
+# opt_net = df[df['Integer'] == intr]
+# opt_net['Optimal Network']
+#
+#
+# # -----------------------  Converting optimal Network expression in term of NOR gate
+# # Corresponds to the specific permuation we convert the optimal Network back using that permutation
+# opt_struct = opt_net.values[0][3]
+# opt_struct.replace('NAND','NOR')

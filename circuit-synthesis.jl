@@ -67,3 +67,10 @@ println("y = ", getvalue(y))
 #       O_gᵢ¹k + O_gᵢ²k ≤ 1     ∀ i ∈ I¹, k ∈ K
 #       αₖⱼ * inᵢⱼ + Oᵢₖ ≤ 1      ∀ i ∈ I, k ∈ K
 #
+
+
+using SymPy
+y = SymFunction("y")
+x = symbols("x")
+eqn = y''(x) + 5y'(x) + 6y(x)
+dsolve(eqn, x, (y, 0, 1), (y, 1, 1//2))
