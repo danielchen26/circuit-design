@@ -20,28 +20,29 @@ Num_fun, Boolean_dict = lf.Boolean_expresso_gen()
 # convertion dict which switches 'Or' and 'And'
 convertion = dict([('Or', 'And'),('And', 'Or')])
 
-t = 1
-NOR_database = []
+
+# Creating NOR optimal net database(takes quite a bit of time!!!)
+database = []
 for func, expression in Boolean_dict.items():
-    print("The {}\n boolean function {}\n has minimal tts: {}".format(t, func, expression) )
+#     print("The {}\n boolean function {}\n has minimal tts: {}".format(t, func, expression) )
     
     # converted expression
     func_converted = expr.expr(lf.multiple_replace(convertion, str(expression[0])))
     
-
     # Final output of the NOR gates optimal network of the input boolean fucntion (1."And" "Or" Switched )
     Opt_NOR_net = lf.permu_search_gen(func_converted,df)
-
     
-    data = np.append(func,Opt_NOR_net)
-    NOR_database.append(data)
-    t+=1
-    if t >10:
-        break
+    data = np.append([func,expression],Opt_NOR_net)
+    database.append(list(data))
 
 
+NOR_database = np.array(database)
 
 
+np.array([i[0] for i in NOR_database[:,1]])
+
+NOR_df = pd.DataFrame({'Binary':NOR_database[:,0],'Expresso_tts':np.array([i[0] for i in NOR_database[:,1]]),'Num_gates':NOR_database[:,2],'Optimal_net':NOR_database[:,3]})
+NOR_df.to_csv("NOR_df.csv", index=False)
 # # test example
 # rs = str(Boolean_dict['1110101011111111'][0])
 # Boolean_dict['1110101011111111'][0]
