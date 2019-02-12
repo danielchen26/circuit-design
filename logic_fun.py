@@ -65,7 +65,7 @@ def permu_search_gen(bf,df):
 
     # The following block test each permutation case in the permutation dictionary list,
     # totally 24 possible case, and choose one the match integer that corresponds to the data library
-    
+
     NOR = []
     for per_num in range(24):
         # test --------------------- each permutation ----------------
@@ -87,33 +87,33 @@ def permu_search_gen(bf,df):
         rs_ex_permu_tt = list (rs_ex_permu.iter_relation())
         permu_br = ''.join([str(i[1]) for i in rs_ex_permu_tt])
         permu_intr = int(permu_br,2)
-        
+
         # permu_intr
 #         Integer = []
-        
-        
+
+
         if not df[df['Integer'] == permu_intr].empty:
             opt_net = df[df['Integer'] == permu_intr]
             opt_struct = opt_net.values[0][3]
             opt_num_gates = opt_net.values[0][2]
-#             print('The original network structure is :\n', opt_struct)
+            print('The original network structure is :\n', opt_struct)
 
-#             print('we have use the permuation dictionary of ', pm_dict_list[per_num])
+            print('we have use the permuation dictionary of ', pm_dict_list[per_num])
 
             # generate reverse permuation mapping
             pm_reverse = dict((v,k) for k, v in pm_dict_list[per_num].items())
-#             print('The reversed permutation mapping is:\n', pm_reverse)
+            print('The reversed permutation mapping is:\n', pm_reverse)
 
             # construct the new NOR gate library
             NOR_net = multiple_replace(pm_reverse, opt_struct).replace('NAND','NOR')
-#             print("The optimal NOR network structure is:\n", NOR_net)
-            
+            print("The optimal NOR network structure is:\n", NOR_net)
+
             NOR = [opt_num_gates, NOR_net]
-            
+
             break# break the searching permuation loops of 24 possible cases
         else:
             NOR = ['NAN','NAN']
-#             print('This specific permu is not in the lib')
-    return  NOR
+            print('This specific permu is not in the lib')
+    return  NOR, permu_intr
         #
         # test --------------------- each permutation ----------------
