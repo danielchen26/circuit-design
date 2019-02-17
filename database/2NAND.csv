@@ -1,0 +1,25 @@
+Binary,Integer,Number of Gates,Optimal Network
+00.01,1,2,"O = NAND(I1)
+I1 = NAND(a, b)"
+00.10,2,3,"O = NAND(I1)
+I1 = NAND(I2, a)
+I2 = NAND(b)"
+01.10,6,4,"O = NAND(I1, I3)
+I1 = NAND(I2, b)
+I2 = NAND(a, b)
+I3 = NAND(a, I2)"
+01.11,7,3,"O = NAND(I1, I2)
+I1 = NAND(b)
+I2 = NAND(a)"
+10.00,8,4,"O = NAND(I1)
+I1 = NAND(I2, I3)
+I2 = NAND(b)
+I3 = NAND(a)"
+10.01,9,5,"O = NAND(I1)
+I1 = NAND(I2, I4)
+I2 = NAND(b, I3)
+I3 = NAND(b, a)
+I4 = NAND(a, I3)"
+10.11,11,2,"O = NAND(I1, b)
+I1 = NAND(a)"
+11.10,14,1,"O = NAND(a, b)"

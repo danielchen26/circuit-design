@@ -46,22 +46,22 @@ AmtR_min, AmtR_max, AmtR_K, AmtR_n = convert(Matrix, p1[p1.repressor.=="AmtR",[:
 # Define functions
 γ = 0.025
 ξ = 0.025
-respone(min, max, K, n, x) = (min + (max - min)*K^n/(K^n + x^n))
+response(min, max, K, n, x) = (min + (max - min)*K^n/(K^n + x^n))
 degradation(x) = γ*x
 
 # Model
 SR = @ode_def_bare SR_latch begin
     # t =1
     #  $65: H1_HlyIIR ---> NOR (In: $62:PhIF, $64:PsrA)
-    dm_HlyIIR = ξ*respone(HlyIIR_min, HlyIIR_max, HlyIIR_K, HlyIIR_n, m_PhIF + m_PsrA ) - degradation(m_HlyIIR)
+    dm_HlyIIR = ξ*response(HlyIIR_min, HlyIIR_max, HlyIIR_K, HlyIIR_n, m_PhIF + m_PsrA ) - degradation(m_HlyIIR)
     #  $62: P3_PhIF   ----> NOR (In: $65:HlyIIR, $61:LmrA )
-    dm_PhIF = ξ*respone(PhIF_min, PhIF_max, PhIF_K, PhIF_n, m_HlyIIR + m_LmrA) - degradation(m_PhIF)
+    dm_PhIF = ξ*response(PhIF_min, PhIF_max, PhIF_K, PhIF_n, m_HlyIIR + m_LmrA) - degradation(m_PhIF)
 	#  $64: R1_PsrA   ----> NOR (In: $63:AmtR, $t)
-    dm_PsrA = ξ*respone(PsrA_min, PsrA_max, PsrA_K, PsrA_n, m_AmtR + p) - degradation(m_PsrA)
+    dm_PsrA = ξ*response(PsrA_min, PsrA_max, PsrA_K, PsrA_n, m_AmtR + p) - degradation(m_PsrA)
     #  $61: N1_LmrA ----> NOT (In: t)
-    dm_LmrA = ξ*respone(LmrA_min, LmrA_max, LmrA_K, LmrA_n, p) - degradation(m_LmrA)
+    dm_LmrA = ξ*response(LmrA_min, LmrA_max, LmrA_K, LmrA_n, p) - degradation(m_LmrA)
     #  $63: A1_AmtR ----> NOT (In: $65:HlyIIR )
-    dm_AmtR = ξ*respone(AmtR_min, AmtR_max, AmtR_K, AmtR_n, m_HlyIIR) - degradation(m_AmtR)
+    dm_AmtR = ξ*response(AmtR_min, AmtR_max, AmtR_K, AmtR_n, m_HlyIIR) - degradation(m_AmtR)
 end
 u0 = SimType([0.0; 0; 0; 0; 0], 0.0)
 p = 0.0
@@ -80,7 +80,7 @@ using DifferentialEquations, ParameterizedFunctions,Plots;plotly()
 using Latexify
 using CSV, DataFrames
 
-const tstop1 = [5.]; const tstop2 = [10.]; const tstop3 = [15.]; const tstop4 = [20.]
+const tstop1 = [100.]; const tstop2 = [600.]; const tstop3 = [1000.]; const tstop4 = [1500.]
 # condition functions
 function condition(u,t,integrator)
   t in tstop1
@@ -162,9 +162,87 @@ function plasmid1(du,u,p,t)
 end
 
 u0 = SimType([0.0;0.0;0.0;0.0;0.0], 0.0)
-prob = ODEProblem(plasmid1,u0,(0.0,25.0))
-const tstop = [5.;10.;15.;20.]
+prob = ODEProblem(plasmid1,u0,(0.0,3025.0))
+const tstop = [100.;600.;1000.;1500.]
 sol = solve(prob,Tsit5(),callback = cbs, tstops=tstop)
-plot(sol,vars=(1))
+plot(sol,vars=(1), xlabel = "time", ylabel = "concentration")
 # control parameters
 [sol[i].f1 for i in 1:length(sol)]
+
+
+
+
+
+
+
+
+#  ------------------------------------------------------------------------------------------------
+#  --------------------    test the toggle switch part only $62: PhIF;  $65: HlyIIR  🔺 works! ---------------------
+using DifferentialEquations, ParameterizedFunctions,Plots;plotly()
+using Latexify
+using CSV, DataFrames
+
+# Import gate Parameters
+para_s1 = CSV.read("database/para_s1.csv");
+para_s4 = CSV.read("database/para_s4.csv");
+p1 = para_s1[:,[:repressor, :Y_min, :Y_max, :K, :n]];
+p4 = para_s4[:,[:repressor, :Y_min, :Y_max, :K, :n]];
+
+# Load parameters for each gate
+HlyIIR_min, HlyIIR_max, HlyIIR_K, HlyIIR_n = convert(Matrix, p1[p1.repressor.=="HlyIIR",[:Y_min, :Y_max, :K, :n]]) 
+PhIF_min, PhIF_max, PhIF_K, PhIF_n = convert(Matrix, p1[p1.repressor.=="PhIF",[:Y_min, :Y_max, :K, :n]])[3,:]
+
+
+
+mutable struct SimType2{T} <: DEDataVector{T}
+    x::Array{T,1}
+    uA::T
+    uB::T
+end
+const tstop1 = [100.]; const tstop2 = [400.]; const tstop3 = [700.]
+
+condition(u,t,integrator) = t in tstop1
+condition2(u,t,integrator) = t in tstop2
+condition3(u,t,integrator) = t in tstop3
+function affect!(integrator)
+  for c in full_cache(integrator)
+  c.uA = 1.0
+  c.uB = 0.0
+end
+end
+function affect2!(integrator)
+  for c in full_cache(integrator)
+  c.uA = 0.0
+  c.uB = 1.0
+end
+end
+function affect3!(integrator)
+
+  for c in full_cache(integrator)
+  c.uA = 1.0
+  c.uB = 0.0
+end
+end
+save_positions = (true,true)
+cb = DiscreteCallback(condition, affect!, save_positions=save_positions); cb2 = DiscreteCallback(condition2, affect2!, save_positions=save_positions); cb3 = DiscreteCallback(condition3, affect3!, save_positions=save_positions)
+cbs = CallbackSet(cb,cb2,cb3)
+
+γ = 0.025
+ξ = 0.025
+
+
+
+function f(du,u,p,t)
+    du[1] = ξ*(HlyIIR_min + (HlyIIR_max - HlyIIR_min)*HlyIIR_K^HlyIIR_n/(HlyIIR_K^HlyIIR_n + (u[2]+u.uB)^HlyIIR_n)) - γ*(u[1])
+    du[2] = ξ*(PhIF_min + (PhIF_max - PhIF_min)*PhIF_K^PhIF_n/(PhIF_K^PhIF_n + (u[1] + u.uA)^PhIF_n)) - γ*(u[2])
+end
+
+u0 = SimType2([0.0;0.0], 0.0, 0.0)
+prob = ODEProblem(f,u0,(0.0,1000.0))
+const tstop = [100.;400.;700.]
+sol = solve(prob,Tsit5(),callback = cbs, tstops=tstop)
+
+plot(sol)
+
+[sol[i].uA for i in 1:length(sol)]
+[sol[i].uB for i in 1:length(sol)]
