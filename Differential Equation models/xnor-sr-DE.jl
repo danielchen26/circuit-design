@@ -1,3 +1,5 @@
+#Author: Tianchi Chen
+
 using DifferentialEquations, ParameterizedFunctions,Plots;plotly()
 using Latexify
 using CSV, DataFrames

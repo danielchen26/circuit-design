@@ -1,0 +1,37 @@
+digraph counter {
+label="counter"
+rankdir="LR"
+remincross=true
+splines=ortho
+{rank = same; "t";}
+{rank = same; "q";}
+"q" [shape=octagon, label="q
+PRIMARY_OUTPUT"]
+"t" [shape=octagon, label="t
+PRIMARY_INPUT"]
+"tPoint" [ shape=point ]
+"t" -> "tPoint":w
+"$61" [shape=box, label="$61
+NOT"]
+"$62" [shape=box, label="$62
+NOR"]
+"$62Point" [ shape=point ]
+"$62" -> "$62Point":w
+"$63" [shape=box, label="$63
+NOT"]
+"$64" [shape=box, label="$64
+NOR"]
+"$65" [shape=box, label="$65
+NOR"]
+"$65Point" [ shape=point ]
+"$65" -> "$65Point":w
+"$62Point":e -> "q"
+"$62Point":e -> "$65"
+"tPoint":e -> "$61"
+"tPoint":e -> "$64"
+"$64" -> "$65"
+"$65Point":e -> "$62"
+"$65Point":e -> "$63"
+"$63" -> "$64"
+"$61" -> "$62"
+}

@@ -1,3 +1,4 @@
+# Author: Tianchi Chen
 import pandas as pd
 import re
 import pyeda.boolalg.expr as expr

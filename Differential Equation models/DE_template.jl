@@ -1,3 +1,4 @@
+# Author: Tianchi Chen
 
 # --------------------------------------      ParameterizedFunctions model     -------------------------------------
 using DifferentialEquations, ParameterizedFunctions,Plots;plotly()
@@ -169,7 +170,7 @@ plot(sol,vars=(1), xlabel = "time", ylabel = "concentration")
 # control parameters
 [sol[i].f1 for i in 1:length(sol)]
 
-
+plot!(sol.t, [sol[i].f1 for i in 1:length(sol)])
 
 
 
@@ -199,33 +200,41 @@ mutable struct SimType2{T} <: DEDataVector{T}
     uA::T
     uB::T
 end
-const tstop1 = [100.]; const tstop2 = [400.]; const tstop3 = [700.]
+const tstop1 = [100.]; const tstop2 = [400.]; const tstop3 = [700.]; const tstop4 = [1000.]
 
 condition(u,t,integrator) = t in tstop1
 condition2(u,t,integrator) = t in tstop2
 condition3(u,t,integrator) = t in tstop3
+condition4(u,t,integrator) = t in tstop4
+
 function affect!(integrator)
   for c in full_cache(integrator)
-  c.uA = 1.0
+  c.uA = 0.0
   c.uB = 0.0
 end
 end
 function affect2!(integrator)
   for c in full_cache(integrator)
   c.uA = 0.0
-  c.uB = 1.0
+  c.uB = 0.0
 end
 end
 function affect3!(integrator)
-
   for c in full_cache(integrator)
   c.uA = 1.0
   c.uB = 0.0
 end
 end
+
+function affect4!(integrator)
+  for c in full_cache(integrator)
+  c.uA = 0.0
+  c.uB = 0.0
+end
+end
 save_positions = (true,true)
-cb = DiscreteCallback(condition, affect!, save_positions=save_positions); cb2 = DiscreteCallback(condition2, affect2!, save_positions=save_positions); cb3 = DiscreteCallback(condition3, affect3!, save_positions=save_positions)
-cbs = CallbackSet(cb,cb2,cb3)
+cb = DiscreteCallback(condition, affect!, save_positions=save_positions); cb2 = DiscreteCallback(condition2, affect2!, save_positions=save_positions); cb3 = DiscreteCallback(condition3, affect3!, save_positions=save_positions); cb4 = DiscreteCallback(condition4, affect4!, save_positions=save_positions);
+cbs = CallbackSet(cb,cb2,cb3,cb4)
 
 γ = 0.025
 ξ = 0.025
@@ -238,11 +247,96 @@ function f(du,u,p,t)
 end
 
 u0 = SimType2([0.0;0.0], 0.0, 0.0)
-prob = ODEProblem(f,u0,(0.0,1000.0))
-const tstop = [100.;400.;700.]
+prob = ODEProblem(f,u0,(0.0,2000.0))
+const tstop = [100.;400.;700.;1000.]
 sol = solve(prob,Tsit5(),callback = cbs, tstops=tstop)
 
 plot(sol)
 
 [sol[i].uA for i in 1:length(sol)]
 [sol[i].uB for i in 1:length(sol)]
+
+plot!(sol.t, [sol[i].uA for i in 1:length(sol)])
+plot!(sol.t, [sol[i].uB for i in 1:length(sol)])
+
+
+
+
+
+
+
+
+
+
+
+
+
+# -----------------------  test -------------------
+
+const tstop1 = [450.]; const tstop2 = [550.];const tstop3 = [1000.]; const tstop4 = [1200.]
+condition(u,t,integrator) = t in tstop1
+condition2(u,t,integrator) = t in tstop2
+condition3(u,t,integrator) = t in tstop3
+condition4(u,t,integrator) = t in tstop4
+function affect!(integrator)
+  for c in full_cache(integrator)
+  c.uA = 0.0
+  c.uB = 5.0
+end
+end
+function affect2!(integrator)
+  for c in full_cache(integrator)
+  c.uA = 0.0
+  c.uB = 0.0
+end
+end
+function affect3!(integrator)
+  for c in full_cache(integrator)
+  c.uA = 5.0
+  c.uB = 0.0
+end
+end
+
+function affect4!(integrator)
+  for c in full_cache(integrator)
+  c.uA = 0.0
+  c.uB = 0.0
+end
+end
+
+save_positions = (true,true)
+cb = DiscreteCallback(condition, affect!, save_positions=save_positions); cb2 = DiscreteCallback(condition2, affect2!, save_positions=save_positions); cb3 = DiscreteCallback(condition3, affect3!, save_positions=save_positions); cb4 = DiscreteCallback(condition4, affect4!, save_positions=save_positions);
+cbs = CallbackSet(cb,cb2,cb3,cb4)
+γ = 0.025
+ξ = 0.025
+
+function fo2(du,u,p,t)
+    du[1] = ξ*(0.07 + (2.5 - 0.07)*0.19^2.6/(0.19^2.6 + (u[2] + u.uA)^2.6)) - γ*(u[1])
+    du[2] = ξ*(0.02 + (6.8 - 0.02)*0.23^4.2/(0.23^4.2 + (u[1] +u.uB)^4.2)) - γ*(u[2])
+end
+
+mutable struct SimType2{T} <: DEDataVector{T}
+    x::Array{T,1}
+    uA::T
+    uB::T
+end
+
+u0 = SimType2([0.0;0.0], 0.0, 0.0)
+prob = ODEProblem(fo,u0,(0.0,2000.0))
+const tstop = [450.;550.;1000.;1200.]
+sol = solve(prob,Tsit5(),callback = cbs, tstops=tstop)
+plot(sol)
+
+plot!(sol.t, [sol[i].uA for i in 1:length(sol)])
+plot!(sol.t, [sol[i].uB for i in 1:length(sol)])
+
+
+
+
+
+
+
+# function fo(du,u,p,t)
+#     du[1] = ξ*(HlyIIR_min + (HlyIIR_max - HlyIIR_min)*HlyIIR_K^HlyIIR_n/(HlyIIR_K^HlyIIR_n + (u[2] + u.uA)^HlyIIR_n)) - γ*(u[1])
+#     du[2] = ξ*(PhIF_min + (PhIF_max - PhIF_min)*PhIF_K^PhIF_n/(PhIF_K^PhIF_n + (u[1] +u.uB)^PhIF_n)) - γ*(u[2])
+# end

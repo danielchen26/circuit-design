@@ -1,0 +1,23 @@
+digraph "counter" {
+label="counter";
+rankdir="LR";
+remincross=true;
+n4 [ shape=octagon, label="q", color="black", fontcolor="black" ];
+n5 [ shape=diamond, label="qnot", color="black", fontcolor="black" ];
+n6 [ shape=octagon, label="t", color="black", fontcolor="black" ];
+c9 [ shape=record, label="{{<p7> A}|$61\n$_NOT_|{<p8> Y}}" ];
+c11 [ shape=record, label="{{<p7> A|<p10> B}|$62\n$_NOR_|{<p8> Y}}" ];
+c12 [ shape=record, label="{{<p7> A}|$63\n$_NOT_|{<p8> Y}}" ];
+c13 [ shape=record, label="{{<p7> A|<p10> B}|$64\n$_NOR_|{<p8> Y}}" ];
+c14 [ shape=record, label="{{<p7> A|<p10> B}|$65\n$_NOR_|{<p8> Y}}" ];
+c9:p8:e -> c11:p10:w [color="black", label=""];
+c12:p8:e -> c13:p7:w [color="black", label=""];
+c13:p8:e -> c14:p7:w [color="black", label=""];
+c11:p8:e -> n4:w [color="black", label=""];
+n4:e -> c14:p10:w [color="black", label=""];
+c14:p8:e -> n5:w [color="black", label=""];
+n5:e -> c11:p7:w [color="black", label=""];
+n5:e -> c12:p7:w [color="black", label=""];
+n6:e -> c13:p10:w [color="black", label=""];
+n6:e -> c9:p7:w [color="black", label=""];
+}

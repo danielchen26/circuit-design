@@ -1,3 +1,4 @@
+# Author: Tianchi Chen
 import pandas as pd
 import json
 from pandas.io.json import json_normalize
@@ -7,6 +8,7 @@ from pyeda.inter import *
 from graphviz import Source
 import re, pyeda.boolalg.expr as expr
 import logic_fun as lf
+import matplotlib.pyplot as plt
 
 # ---------------------------  Importing BESS NAND database (inputs : 2~4 ) -----------------------------
 # library of optimial gates
@@ -18,8 +20,15 @@ df4 = pd.read_csv("database/BESS_NAND.csv")
 df4 = df4.replace(r'\r\n', ',', regex = True)# modify df[['Optimal Network']] column
 
 
+
+
+
+
+
+
 # ------------------- Generating a dictionary of minimal dnf design of each "Num_fun" of boolean functions
 Num_fun, Boolean_dict = lf.Boolean_expresso_gen()
+
 # convertion dict which switches 'Or' and 'And'
 convertion = dict([('Or', 'And'),('And', 'Or')])
 
@@ -223,6 +232,75 @@ NOR_DATABASE.to_csv("NOR_DATABASE_filtered.csv", index=False)
 
 
 
+# -------   combining database together ------------**************************************************************************
+Num_total_fun2, Boolean_dict2 = lf.Boolean_expresso_gens(2)
+
+df4
+df2
+# --------- generating 4inputs database -------
+Num_total_fun, Boolean_dict = lf.Boolean_expresso_gens(4)
+convertion = dict([('Or', 'And'),('And', 'Or')])
+Database = []
+
+for func, expression in Boolean_dict.items():
+    # converted expression
+    func_converted = expr.expr(lf.multiple_replace(convertion, str(expression[0])))
+    Num_in = len(func_converted.inputs)
+    # Final output of the NOR gates optimal network of the input boolean fucntion (1."And" "Or" Switched )
+    Opt_NOR_net = lf.permu_search_gens(func_converted,4,df4)
+    data = np.append(np.append([func,expression],Opt_NOR_net),Num_in)
+    Database.append(list(data))
+
+NOR4_database=np.array(Database)
+NOR_df4 = pd.DataFrame({'Binary':NOR4_database[:,0],'Expresso_tts':np.array([i[0] for i in NOR4_database[:,1]]),'Num_gates':[i[0] for i in NOR4_database[:,2]],'Optimal_net':[i[1] for i in NOR4_database[:,2]], 'Permu_int':NOR4_database[:,3],'Num_in': NOR4_database[:,4]})
+NOR_df4 = NOR_df4[NOR_df4.Num_in ==4]
+NOR_df4.to_csv("NOR_df4.csv", index=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -234,11 +312,78 @@ NOR_DATABASE.to_csv("NOR_DATABASE_filtered.csv", index=False)
 # --------- ########## --------- #########-------------------   visualizations  --------- ########## --------- #########-------------------
 
 #  ------ First reimport data ------
-import pandas as pd
-DB_import = pd.read_csv('NOR_DATABASE_filtered.csv')
-# Add TN_functions column
-from math import factorial
-DB_import['TN_functions'] = DB_import['Num_in'].apply(lambda x : factorial(x))
+DB_import = pd.read_csv('NOR_DATABASE_.csv')
+
+
+
+# Import unfiltered data
+DB_df4_uf = pd.read_csv('NOR_df4_unfiltered.csv')
+
+test2 = DB_df4_uf[DB_df4_uf.Num_in ==2]
+test_list = test2.Expresso_tts.tolist()
+
+expr_set = [expr.expr(i) for i in test_list]
+
+for each in expr_set:
+    each
+    var_list = list(each.inputs)
+    var_list_str = [str(i) for i in var_list]
+    all_permu = list(itertools.permutations(var_list_str,2))
+    origin = var_list_str
+    pm_dict_list = [dict(zip(origin, each)) for each in all_permu]
+
+
+    from math import factorial
+    for per_num in range(factorial(2)):
+        # test --------------------- each permutation ----------------
+        rs_ex_permu = expr.expr(lf.multiple_replace(pm_dict_list[per_num], str(each)))
+        rs_ex_permu_tt = list (rs_ex_permu.iter_relation())
+        permu_br = ''.join([str(i[1]) for i in rs_ex_permu_tt])
+        permu_intr = int(permu_br,2)
+        permu_intr
+
+
+
+    t_i = expr2truthtable(each)
+    # t_i
+    rs_ex_permu_tt = list (t_i.iter_relation())
+    permu_br = ''.join([str(i[1]) for i in rs_ex_permu_tt])
+    permu_intr = int(permu_br,2)
+    permu_intr
+
+
+df2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Import visualizations modules
@@ -496,7 +641,7 @@ import matplotlib.pyplot as plt
 
 # style.use('ggplot')
 plt.style.use('tableau-colorblind10')
-sns.set(font_scale=1.6) 
+sns.set(font_scale=1.6)
 sns.set_style("white")
 f1=plt.figure(figsize=(12,10))
 sns.violinplot(x="Num_in", y="Num_gates" ,bw= 0.1,scale="width",inner="quartile",data=DB_import)
@@ -511,7 +656,3 @@ sns.set_context("poster")
 plt.show()
 
 f1.savefig("./Plots/violin_each_inputs.png", dpi = 600)
-
-
-
-

@@ -1,0 +1,13 @@
+read_verilog /Users/chentianchi/Downloads/tianchi/counter.v
+flatten
+splitnets -ports
+hierarchy -auto-top
+proc
+techmap
+opt
+abc -g NOR
+opt
+hierarchy -auto-top
+show -format pdf -prefix /Users/chentianchi/Desktop/tianchi_test_couter/counter_yosys
+write_edif /Users/chentianchi/Desktop/tianchi_test_couter/counter.edif
+write_json /Users/chentianchi/Desktop/tianchi_test_couter/counter.json
