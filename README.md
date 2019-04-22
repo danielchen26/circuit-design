@@ -2,15 +2,13 @@
 
 Folder descriptions:
 1. Circuit Partition(top-down) : Related to Graph Partition.
---
 2. Circuit Scaling up(bottom-up) : The BESS related NOR gates optimal boolean network generation.
 3. Circuit Scaling up(bottom-up)/BESS_database : The NAND optimal network in html and csv format
 4. Circuit Scaling up(bottom-up)/NOR_database : The generated NOR gates optimal design for circuit scaling up problem.
 5. Circuit Scaling up(bottom-up)/Plots: Some statistical plots related to the 4 inputs- 1 output circuit scaling up database.
 6. Circuit Scaling up(bottom-up)/Plots/Statistical results : statistical data for sum and cumsum for different Max gates allowed in the cell.
---
 7. Differential Equation models : On the biological sequential counter design.
-# Two General Problem
+# Two General Problems
 ## 1. Differential Equation of Xnor-SR model
 
 - Differential Equation models/scripts/gate_para.py: Generating two libraries of gate parameters for the input-output response functions of each promoter 
