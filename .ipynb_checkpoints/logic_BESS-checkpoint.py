@@ -1,3 +1,4 @@
+# Author: Tianchi Chen
 import pandas as pd
 import json
 from pandas.io.json import json_normalize
@@ -7,6 +8,7 @@ from pyeda.inter import *
 from graphviz import Source
 import re, pyeda.boolalg.expr as expr
 import logic_fun as lf
+import matplotlib.pyplot as plt
 
 # ---------------------------  Importing BESS NAND database (inputs : 2~4 ) -----------------------------
 # library of optimial gates
@@ -18,8 +20,15 @@ df4 = pd.read_csv("database/BESS_NAND.csv")
 df4 = df4.replace(r'\r\n', ',', regex = True)# modify df[['Optimal Network']] column
 
 
+
+
+
+
+
+
 # ------------------- Generating a dictionary of minimal dnf design of each "Num_fun" of boolean functions
 Num_fun, Boolean_dict = lf.Boolean_expresso_gen()
+
 # convertion dict which switches 'Or' and 'And'
 convertion = dict([('Or', 'And'),('And', 'Or')])
 
@@ -223,6 +232,149 @@ NOR_DATABASE.to_csv("NOR_DATABASE_filtered.csv", index=False)
 
 
 
+# # -------   combining database together ------------ (abandoned)**************************************************************************
+# Num_total_fun2, Boolean_dict2 = lf.Boolean_expresso_gens(2)
+#
+# df4
+# df2
+#
+#
+# # --------- generating 4inputs database -------
+# Num_total_fun, Boolean_dict = lf.Boolean_expresso_gens(4)
+# convertion = dict([('Or', 'And'),('And', 'Or')])
+# Database = []
+# t = 0
+# for func, expression in Boolean_dict.items():
+#     # converted expression
+#     func_converted = expr.expr(lf.multiple_replace(convertion, str(expression[0])))
+#     Num_in = len(func_converted.inputs)
+#     # Final output of the NOR gates optimal network of the input boolean fucntion (1."And" "Or" Switched )
+#     Opt_NOR_net = lf.permu_search_gens(func_converted,4,df4)
+#     data = np.append(np.append([func,expression],Opt_NOR_net),Num_in)
+#     Database.append(list(data))
+#     t+=1
+#     if t >3: break
+#
+# NOR4_database=np.array(Database)
+# NOR_df4 = pd.DataFrame({'Binary':NOR4_database[:,0],'Expresso_tts':np.array([i[0] for i in NOR4_database[:,1]]),'Num_gates':[i[0] for i in NOR4_database[:,2]],'Optimal_net':[i[1] for i in NOR4_database[:,2]], 'Permu_int':NOR4_database[:,3],'Num_in': NOR4_database[:,4]})
+# NOR_df4 = NOR_df4[NOR_df4.Num_in ==4]
+# NOR_df4.to_csv("NOR_df4.csv", index=False)
+
+
+
+
+
+
+# --------------------------------------------------- Correcting Dataframe begining ================================
+# --------------------------------------------------- Correcting Dataframe begining ================================
+# Import unfiltered data
+DB_df4_uf = pd.read_csv('NOR_df4_unfiltered.csv')
+
+set1 = DB_df4_uf[DB_df4_uf.Num_in ==1]
+set2 = DB_df4_uf[DB_df4_uf.Num_in ==2]
+set3 = DB_df4_uf[DB_df4_uf.Num_in ==3]
+set4 = DB_df4_uf[DB_df4_uf.Num_in ==4]
+
+set_list2 = set2.Expresso_tts.tolist()
+set_list3 = set3.Expresso_tts.tolist()
+
+
+
+
+expr_set2 = [expr.expr(i) for i in set_list2]
+expr_set3 = [expr.expr(i) for i in set_list3]
+len(expr_set23)
+expr_set23 = expr_set2+expr_set3
+df_orgin_combined = [df2,df3]
+df_orgin_combined
+t = 0
+NOR_23_correct = []
+for each in expr_set23:
+    print('Number {} input expression is {}:'.format(t,each) )
+    var_list = list(each.inputs)
+    vars_count = len(var_list)
+    var_list_str = [str(i) for i in var_list]
+    all_permu = list(itertools.permutations(var_list_str,vars_count)) #💚
+    origin = var_list_str
+    pm_dict_list = [dict(zip(origin, i)) for i in all_permu]
+
+
+    from math import factorial
+    for per_num in range(factorial(vars_count)): #💚
+        # set --------------------- each permutation ----------------
+        each_permu = pm_dict_list[per_num]
+        print('The permuations is:',each_permu)
+        rs_ex_permu = expr.expr(lf.multiple_replace(each_permu, str(each)))
+        rs_ex_permu_tt = list (rs_ex_permu.iter_relation())
+        permu_br = ''.join([str(i[1]) for i in rs_ex_permu_tt])
+        permu_intr = int(permu_br,2)
+        print('Int number:',permu_intr)
+
+        df = df_orgin_combined[vars_count-2] #💚
+        if not df[df['Integer']== permu_intr].empty:
+
+            opt_net = df[df['Integer'] == permu_intr]
+            opt_struct = opt_net.values[0][3]
+            opt_num_gates = opt_net.values[0][2]
+
+            # generate reverse permuation mapping
+            pm_reverse = dict((v,k) for k, v in pm_dict_list[per_num].items())
+            print('reverse permutation is:',pm_reverse)
+            # get reverse permuation in terms of abcd
+            # convert_abcd = {'x[0]':'a','x[1]':'b','x[2]':'c','x[3]':'d'} # make the two variables to be a and b
+            new_convert = dict(zip(each_permu.keys(),['a','b','c'][0:vars_count])) #💚
+            pm_reverse_new = dict((new_convert[key], new_convert[value]) for (key, value) in pm_reverse.items())
+            print('reverse permuation final:',pm_reverse_new)
+
+            NOR_net = lf.multiple_replace(pm_reverse_new, opt_struct).replace('NAND','NOR')
+            print("original NAND design:",opt_struct)
+            print("NOR design is:\n", NOR_net)
+
+            NOR = [opt_num_gates, NOR_net]
+            data = np.append([each,vars_count],NOR)
+            NOR_23_correct.append(list(data))
+            break
+    t+=1
+    print('\n')
+
+
+
+
+# corrected set1 with 1 input
+set1.Expresso_tts.str.contains('~')
+set1['Num_gates'] = set1["Expresso_tts"].apply(lambda x: len(x)-4)
+
+# for corrected df of 2,3 inputs
+set23 = np.array(NOR_23_correct)
+Binary = set2.append(set3).Binary
+tts = [i[0] for i in set23]
+Num_in = [i[1] for i in set23]
+Num_gates = [i[2] for i in set23]
+Optimal_net = [i[3] for i in set23]
+
+# The correct df for input1, 2,3 and 4
+dfc_1 = set1.drop(columns = ['Permu_int'])
+dfc_23 = pd.DataFrame({'Binary':Binary, 'Expresso_tts':tts,'Num_gates':Num_gates,'Optimal_net':Optimal_net,'Num_in':Num_in})
+dfc_4 = set4.drop(columns = ['Permu_int'])
+
+
+# The final corrected NOR database
+dfc_final = dfc_1.append(dfc_23).append(dfc_4)
+
+dfc_final.to_csv("NOR_database_Corrected_withoutID.csv",index =False )
+
+
+# --------------------------------------------------- Correcting Dataframe finished ================================
+# --------------------------------------------------- Correcting Dataframe finished================================
+
+
+
+
+
+
+
+
+
 
 
 
@@ -232,15 +384,6 @@ NOR_DATABASE.to_csv("NOR_DATABASE_filtered.csv", index=False)
 
 
 # --------- ########## --------- #########-------------------   visualizations  --------- ########## --------- #########-------------------
-
-#  ------ First reimport data ------
-import pandas as pd
-DB_import = pd.read_csv('NOR_DATABASE_filtered.csv')
-# Add TN_functions column
-from math import factorial
-DB_import['TN_functions'] = DB_import['Num_in'].apply(lambda x : factorial(x))
-
-
 # Import visualizations modules
 import IPython
 import altair as alt
@@ -254,12 +397,41 @@ import seaborn as sns
 
 
 
-DB_import
-test = DB_import.iloc[0:400,:]
 
-p2 = alt.Chart(DB_import.iloc[0:400,:]).mark_bar().encode(
+
+#  ------ First reimport data ------
+DB_import = pd.read_csv('NOR_database_Corrected_withoutID.csv')
+DB_import['fc'] =1
+
+DB_sum = DB_import.groupby("Num_gates").sum().reset_index()
+DB_sum.to_csv('sum.csv', index = False)
+csum = DB_sum.fc.cumsum()
+
+
+
+
+csum_df = pd.DataFrame({'Num_gates':csum.index,'cumsum':csum.values})
+csum_df['cumsum'].iplot(kind="histogram", bins=20, theme="white")
+csum_df.to_csv('cumsum.csv',index = False)
+
+
+
+
+import plotly.graph_objs as go
+
+iplot([go.Histogram2dContour(x=DB_sum.Num_gates, y=DB_sum.fc, contours=dict(coloring='heatmap')),
+       go.Scatter(x=DB_sum.Num_gates, y=DB_sum.fc, mode='markers', marker=dict(color='white', size=3, opacity=0.3))], show_link=False)
+
+
+
+
+
+
+
+
+p2 = alt.Chart(DB_import).mark_bar().encode(
     x='Num_gates',
-    y='sum(TN_functions)',
+    y='count(Num_gates)',
     color=alt.Color('Num_in:N', scale=alt.Scale(scheme='set1'))
 ).configure(background="White").interactive()
 vegify(p2)
@@ -268,8 +440,8 @@ vegify(p2)
 
 p3 = alt.Chart(DB_import.iloc[0:400,:]).mark_bar().encode(
     x='Num_in',
-    y='sum(Num_gates)',
-    order=alt.Order('sum(Num_gates)', sort='ascending'),
+    y='count(Num_gates)',
+    order=alt.Order('count(Num_gates)', sort='ascending'),
     color=alt.Color('Num_gates:N', scale=alt.Scale(scheme='set1'))
 ).configure(background="White").interactive()
 vegify(p3)
@@ -278,7 +450,7 @@ vegify(p3)
 
 alt.Chart(DB_import.iloc[0:400,:]).mark_bar(opacity=0.7).encode(
     x='Num_gates:O',
-    y=alt.Y('sum(TN_functions):Q', stack=None),
+    y=alt.Y('count(Num_gates):Q', stack=None),
     color=alt.Color('Num_in:N', scale=alt.Scale(scheme='dark2')),
 ).configure(background="White")
 
@@ -289,7 +461,7 @@ alt.Chart(DB_import.iloc[0:400,:]).mark_bar(opacity=0.7).encode(
 # Relative abundance of different # of inputs for each min gates realization
 relative_ab = alt.Chart(DB_import).mark_bar(opacity=0.7).encode(
     x=alt.X('Num_gates:O',title="# of min NOR gates"),
-    y=alt.Y('sum(TN_functions):Q', stack="normalize", title="Fraction of total # of boolean functions"),
+    y=alt.Y('count(Num_gates):Q', stack="normalize", title="Fraction of total # of boolean functions"),
     color=alt.Color('Num_in:N', scale=alt.Scale(scheme='dark2'), title='Number of inputs'),
 ).properties(title = "Relative abundance of different # of inputs for each min gates realization"
             ).configure(background="White").interactive()
@@ -300,16 +472,12 @@ relative_ab.save('./Plots/relative_abundance.html')
 
 
 
-
-
-alt.Chart(DB_import).mark_bar(opacity=0.7).encode(
-    x='Num_in',
-    y=alt.Y('sum(TN_functions):Q', stack="normalize"),
+alt.Chart(test).mark_bar(opacity=0.7).encode(
+    x=alt.X('Num_in:O'),
+    y=alt.Y('sum(fc):O', stack="normalize"),
     # order=alt.Order('sum(Num_gates)', sort='ascending'),
     color=alt.Color('Num_in:N', scale=alt.Scale(scheme='set1')),
-    column='Num_gates:N',
-).properties(
-    width=40
+    column='Num_gates:O',
 ).configure(background="White").interactive()
 
 
@@ -322,20 +490,19 @@ alt.Chart(DB_import).mark_bar(opacity=0.7).encode(
 # --- Plot3 :  Total number of functions histogram for each min NOR net in different # input cases (for p-class: just change Y->cout())
 hist1 = alt.Chart(DB_import).mark_bar().encode(
     x=alt.X('Num_gates:O',title="# of min NOR gates"),
-    y=alt.Y('sum(TN_functions):Q',title='Total # of boolean functions'),
+    y=alt.Y('count(Num_gates):Q',title='Total # of boolean functions'),
     color=alt.Color('Num_gates:O',scale=alt.Scale(scheme='category20b')),
-    column='Num_in:N'
-).properties(title = "Total number of functions histogram for each min NOR net in different # input cases"
+    column='Num_in:N').properties(title = "Total number of functions histogram for each min NOR net in different # input cases"
             ).configure(background="White").interactive()
 hist1.save('./Plots/hist_gates_in.html')
 
 
 
 
-# --- Plot4 :  Total number of functions histogram(discrete dot: easy to read) for each min NOR net in different # input cases (for p-class: just change Y->cout())
+# --- Plot4 :  Total number of functions histogram(discrete dot: easy to read) for each min NOR net in different # input cases
 hist2 = alt.Chart(DB_import).mark_bar().encode(
     x=alt.X('Num_gates:O',title="# of min NOR gates"),
-    y=alt.Y('sum(TN_functions):O',sort ='ascending',title='Total # of boolean functions'),
+    y=alt.Y('sum(fc):O',sort ='ascending',title='Total # of boolean functions'),
     color=alt.Color('Num_gates:O',scale=alt.Scale(scheme='category20b')),
     column='Num_in:N'
 ).properties(title = "Total number of functions square plot for each min NOR net in different # input cases"
@@ -359,7 +526,7 @@ select_number_of_gates = alt.selection_single(name="NOR", fields=['Num_gates'], 
 
 slide_bar = alt.Chart(DB_import).mark_bar().encode(
     x=alt.X('Num_gates:N', axis=alt.Axis(title=None)),
-    y=alt.Y('sum(TN_functions):O',title='Total # of boolean functions'),
+    y=alt.Y('sum(fc):O',title='Total # of boolean functions'),
     color=alt.Color('Num_in:N', scale=alt.Scale(scheme='set1')),
     column='Num_in:O'
 ).properties(title = "Total number of functions square plot for each min NOR net in different # input cases",
@@ -370,7 +537,8 @@ slide_bar = alt.Chart(DB_import).mark_bar().encode(
     select_number_of_gates
 ).configure(background="White")
 
-slide_bar
+slide_bar.save('./Plots/hist_gates_in_square_bar_control.html')
+
 
 
 
@@ -402,7 +570,7 @@ click = alt.selection_multi(encodings=['color'])
 
 norm_bar = alt.Chart().mark_bar(opacity=0.7).encode(
     x=alt.X('Num_gates:O',title = 'minimun NOR gates'),
-    y=alt.Y('sum(TN_functions):Q', stack="normalize", title = 'Total # of functions colored by inputs'),
+    y=alt.Y('count(Num_gates):Q', stack="normalize", title = 'Total # of functions colored by inputs'),
     color=alt.Color('Num_in:O',legend=alt.Legend(title="Number inputs")),
 ).properties(
     width=600,
@@ -418,7 +586,7 @@ norm_bar = alt.Chart().mark_bar(opacity=0.7).encode(
 # Bottom panel is a bar chart of weather type
 bars = alt.Chart().mark_bar().encode(
     x=alt.X('Num_gates:N',title = 'minimun NOR gates'),
-    y=alt.Y('sum(TN_functions):Q',title ='Total # of functions of all inputs'),
+    y=alt.Y('count(Num_gates):Q',title ='Total # of functions of all inputs'),
     color=alt.condition(click, color, alt.value('lightgray')),
 ).transform_filter(
     brush
@@ -460,7 +628,7 @@ brush = alt.selection(type='interval', encodings=['x'])
 # background and highlights
 base = alt.Chart().mark_bar().encode(
     x=alt.X(alt.repeat('column'), type='quantitative'),
-    y=alt.Y('sum(TN_functions):Q', stack="normalize")
+    y=alt.Y('count(Num_gates):Q', stack="normalize")
 ).properties(
     width=180,
     height=130
@@ -495,7 +663,7 @@ import matplotlib.pyplot as plt
 
 # style.use('ggplot')
 plt.style.use('tableau-colorblind10')
-sns.set(font_scale=1.6) 
+sns.set(font_scale=1.6)
 sns.set_style("white")
 f1=plt.figure(figsize=(12,10))
 sns.violinplot(x="Num_in", y="Num_gates" ,bw= 0.1,scale="width",inner="quartile",data=DB_import)
@@ -505,12 +673,8 @@ plt.ylabel("Number minimum NOR gates")
 sns.despine(trim=True)
 plt.tight_layout()
 plt.axhline(y=7, color='r', linestyle=':')
-plt.title("Distribution of min NOR gates(Categorical[1~14]) of functions with different inputs[2~4] ")
+plt.title("Distribution of min NOR gates(Categorical[1~14]) of functions with different inputs[1~4] ")
 sns.set_context("poster")
 plt.show()
 
 f1.savefig("./Plots/violin_each_inputs.png", dpi = 600)
-
-
-
-

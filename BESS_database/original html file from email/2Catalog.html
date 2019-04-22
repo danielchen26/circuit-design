@@ -1,0 +1,13 @@
+<html><body>
+<h1>2-Input Functions</h1>
+<table border = 1>
+<tr><th>Binary</th><th>Integer</th><th>Number of Gates</th><th>Optimal Network</th></tr>
+<tr><td align="center">00.01</td><td align="center">1</td><td align="center">2</td><td>O = NAND(I1)<br>I1 = NAND(a, b)</td></tr>
+<tr><td align="center">00.10</td><td align="center">2</td><td align="center">3</td><td>O = NAND(I1)<br>I1 = NAND(I2, a)<br>I2 = NAND(b)</td></tr>
+<tr><td align="center">01.10</td><td align="center">6</td><td align="center">4</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, b)<br>I2 = NAND(a, b)<br>I3 = NAND(a, I2)</td></tr>
+<tr><td align="center">01.11</td><td align="center">7</td><td align="center">3</td><td>O = NAND(I1, I2)<br>I1 = NAND(b)<br>I2 = NAND(a)</td></tr>
+<tr><td align="center">10.00</td><td align="center">8</td><td align="center">4</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(b)<br>I3 = NAND(a)</td></tr>
+<tr><td align="center">10.01</td><td align="center">9</td><td align="center">5</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(b, I3)<br>I3 = NAND(b, a)<br>I4 = NAND(a, I3)</td></tr>
+<tr><td align="center">10.11</td><td align="center">11</td><td align="center">2</td><td>O = NAND(I1, b)<br>I1 = NAND(a)</td></tr>
+<tr><td align="center">11.10</td><td align="center">14</td><td align="center">1</td><td>O = NAND(a, b)</td></tr>
+</body></html>

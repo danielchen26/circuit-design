@@ -1,0 +1,73 @@
+<html><body>
+<h1>3-Input Functions</h1>
+<table border = 1>
+<tr><th>Binary</th><th>Integer</th><th>Number of Gates</th><th>Optimal Network</th></tr>
+<tr><td align="center">00.00.00.01</td><td align="center">1</td><td align="center">4</td><td>O = NAND(I1)<br>I1 = NAND(a, I2)<br>I2 = NAND(I3)<br>I3 = NAND(b, c)</td></tr>
+<tr><td align="center">00.00.00.10</td><td align="center">2</td><td align="center">5</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(I4)<br>I4 = NAND(a, b)</td></tr>
+<tr><td align="center">00.00.01.10</td><td align="center">6</td><td align="center">6</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(b, c)<br>I3 = NAND(I4, I5)<br>I4 = NAND(a, c)<br>I5 = NAND(b, a)</td></tr>
+<tr><td align="center">00.00.01.11</td><td align="center">7</td><td align="center">3</td><td>O = NAND(I1, I2)<br>I1 = NAND(a, c)<br>I2 = NAND(a, b)</td></tr>
+<tr><td align="center">00.00.10.00</td><td align="center">8</td><td align="center">6</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(I4)<br>I4 = NAND(I5, a)<br>I5 = NAND(b)</td></tr>
+<tr><td align="center">00.00.10.01</td><td align="center">9</td><td align="center">7</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(c, b)<br>I4 = NAND(I5)<br>I5 = NAND(I6, a)<br>I6 = NAND(b, I3)</td></tr>
+<tr><td align="center">00.00.10.11</td><td align="center">11</td><td align="center">4</td><td>O = NAND(I1)<br>I1 = NAND(I2, a)<br>I2 = NAND(c, I3)<br>I3 = NAND(b)</td></tr>
+<tr><td align="center">00.00.11.10</td><td align="center">14</td><td align="center">3</td><td>O = NAND(I1)<br>I1 = NAND(I2, a)<br>I2 = NAND(b, c)</td></tr>
+<tr><td align="center">00.01.01.10</td><td align="center">22</td><td align="center">8</td><td>O = NAND(I1, I6)<br>I1 = NAND(I2, I3)<br>I2 = NAND(a, b)<br>I3 = NAND(I4, I5)<br>I4 = NAND(b, c)<br>I5 = NAND(a, c)<br>I6 = NAND(I7, I4)<br>I7 = NAND(I2)</td></tr>
+<tr><td align="center">00.01.01.11</td><td align="center">23</td><td align="center">6</td><td>O = NAND(I1, I5)<br>I1 = NAND(b, I2)<br>I2 = NAND(I3, I4)<br>I3 = NAND(c)<br>I4 = NAND(a)<br>I5 = NAND(a, c)</td></tr>
+<tr><td align="center">00.01.10.00</td><td align="center">24</td><td align="center">7</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(a, b)<br>I3 = NAND(I4, I5)<br>I4 = NAND(b, c)<br>I5 = NAND(a, I6)<br>I6 = NAND(c)</td></tr>
+<tr><td align="center">00.01.10.01</td><td align="center">25</td><td align="center">7</td><td>O = NAND(I1, I2)<br>I1 = NAND(b, c)<br>I2 = NAND(I3, I4)<br>I3 = NAND(c)<br>I4 = NAND(I5)<br>I5 = NAND(I6, a)<br>I6 = NAND(b)</td></tr>
+<tr><td align="center">00.01.10.10</td><td align="center">26</td><td align="center">6</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(a, c)<br>I3 = NAND(I4, I5)<br>I4 = NAND(b, c)<br>I5 = NAND(a)</td></tr>
+<tr><td align="center">00.01.10.11</td><td align="center">27</td><td align="center">4</td><td>O = NAND(I1, I2)<br>I1 = NAND(b, c)<br>I2 = NAND(I3, a)<br>I3 = NAND(c)</td></tr>
+<tr><td align="center">00.01.11.10</td><td align="center">30</td><td align="center">6</td><td>O = NAND(I1, I5)<br>I1 = NAND(I2, I3)<br>I2 = NAND(a, b)<br>I3 = NAND(I4, I5)<br>I4 = NAND(b, c)<br>I5 = NAND(a, I4)</td></tr>
+<tr><td align="center">00.01.11.11</td><td align="center">31</td><td align="center">3</td><td>O = NAND(I1, I2)<br>I1 = NAND(b, c)<br>I2 = NAND(a)</td></tr>
+<tr><td align="center">00.10.10.00</td><td align="center">40</td><td align="center">7</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(I4, I6)<br>I4 = NAND(I5, b)<br>I5 = NAND(a, b)<br>I6 = NAND(a, I5)</td></tr>
+<tr><td align="center">00.10.10.01</td><td align="center">41</td><td align="center">8</td><td>O = NAND(I1, I9)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(a, b)<br>I4 = NAND(I5, I7)<br>I5 = NAND(I3, b)<br>I7 = NAND(a, I3)</td></tr>
+<tr><td align="center">00.10.10.10</td><td align="center">42</td><td align="center">4</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, b)<br>I2 = NAND(c)<br>I3 = NAND(a, I2)</td></tr>
+<tr><td align="center">00.10.10.11</td><td align="center">43</td><td align="center">5</td><td>O = NAND(I1, I4)<br>I1 = NAND(I2, b)<br>I2 = NAND(c, I3)<br>I3 = NAND(c, a)<br>I4 = NAND(a, I3)</td></tr>
+<tr><td align="center">00.10.11.00</td><td align="center">44</td><td align="center">7</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c, b)<br>I3 = NAND(I4, I6)<br>I4 = NAND(I5, b)<br>I5 = NAND(a, b)<br>I6 = NAND(a, I5)</td></tr>
+<tr><td align="center">00.10.11.01</td><td align="center">45</td><td align="center">7</td><td>O = NAND(I1, I5)<br>I1 = NAND(I2, I8)<br>I2 = NAND(I3, I5)<br>I3 = NAND(I4, b)<br>I4 = NAND(c)<br>I5 = NAND(a, I3)</td></tr>
+<tr><td align="center">00.10.11.10</td><td align="center">46</td><td align="center">4</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, b)<br>I2 = NAND(c, b)<br>I3 = NAND(a, I2)</td></tr>
+<tr><td align="center">00.10.11.11</td><td align="center">47</td><td align="center">4</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, b)<br>I2 = NAND(c)<br>I3 = NAND(a)</td></tr>
+<tr><td align="center">00.11.11.01</td><td align="center">61</td><td align="center">6</td><td>O = NAND(I1, I4)<br>I1 = NAND(I2, b)<br>I2 = NAND(a, I3)<br>I3 = NAND(c)<br>I4 = NAND(a, I5)<br>I5 = NAND(b)</td></tr>
+<tr><td align="center">00.11.11.10</td><td align="center">62</td><td align="center">5</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, b)<br>I2 = NAND(a, c)<br>I3 = NAND(a, I4)<br>I4 = NAND(b)</td></tr>
+<tr><td align="center">01.10.10.00</td><td align="center">104</td><td align="center">10</td><td>O = NAND(I1, I13)<br>I1 = NAND(I2, I8)<br>I2 = NAND(b, I3)<br>I3 = NAND(I4, I6)<br>I4 = NAND(a, I5)<br>I5 = NAND(a, c)<br>I6 = NAND(I5, c)<br>I8 = NAND(I6, I11)</td></tr>
+<tr><td align="center">01.10.10.01</td><td align="center">105</td><td align="center">8</td><td>O = NAND(I1, I13)<br>I1 = NAND(I2, I3)<br>I2 = NAND(b, I3)<br>I3 = NAND(I4, I6)<br>I4 = NAND(I5, c)<br>I5 = NAND(a, c)<br>I6 = NAND(a, I5)</td></tr>
+<tr><td align="center">01.10.10.10</td><td align="center">106</td><td align="center">7</td><td>O = NAND(I1, I6)<br>I1 = NAND(I2, c)<br>I2 = NAND(I3, c)<br>I3 = NAND(I4, I5)<br>I4 = NAND(b)<br>I5 = NAND(a)<br>I6 = NAND(I3, I2)</td></tr>
+<tr><td align="center">01.10.10.11</td><td align="center">107</td><td align="center">8</td><td>O = NAND(I1, I12)<br>I1 = NAND(I2, I6)<br>I2 = NAND(b, I3)<br>I3 = NAND(b, I4)<br>I4 = NAND(I5, c)<br>I5 = NAND(a, c)<br>I6 = NAND(I4, I3)</td></tr>
+<tr><td align="center">01.10.11.10</td><td align="center">110</td><td align="center">7</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, c)<br>I2 = NAND(b, c)<br>I3 = NAND(I4)<br>I4 = NAND(I5, I7)<br>I5 = NAND(a, I2)</td></tr>
+<tr><td align="center">01.10.11.11</td><td align="center">111</td><td align="center">7</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, c)<br>I2 = NAND(b, c)<br>I3 = NAND(I4)<br>I4 = NAND(I5, I6)<br>I5 = NAND(a)<br>I6 = NAND(b, I2)</td></tr>
+<tr><td align="center">01.11.11.10</td><td align="center">126</td><td align="center">7</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, c)<br>I2 = NAND(a)<br>I3 = NAND(I4, I7)<br>I4 = NAND(I5, I2)<br>I5 = NAND(b)</td></tr>
+<tr><td align="center">01.11.11.11</td><td align="center">127</td><td align="center">6</td><td>O = NAND(I1, I2)<br>I1 = NAND(c)<br>I2 = NAND(I3)<br>I3 = NAND(I4, I5)<br>I4 = NAND(b)<br>I5 = NAND(a)</td></tr>
+<tr><td align="center">10.00.00.00</td><td align="center">128</td><td align="center">7</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(I4)<br>I4 = NAND(I5, I6)<br>I5 = NAND(b)<br>I6 = NAND(a)</td></tr>
+<tr><td align="center">10.00.00.01</td><td align="center">129</td><td align="center">8</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(b)<br>I4 = NAND(I5, I8)<br>I5 = NAND(I3, I7)<br>I7 = NAND(a)</td></tr>
+<tr><td align="center">10.00.00.10</td><td align="center">130</td><td align="center">8</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(I4)<br>I4 = NAND(I5, I7)<br>I5 = NAND(b, I6)<br>I6 = NAND(b, a)<br>I7 = NAND(a, I6)</td></tr>
+<tr><td align="center">10.00.00.11</td><td align="center">131</td><td align="center">8</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(b, a)<br>I4 = NAND(I5)<br>I5 = NAND(I6, I8)<br>I6 = NAND(b, I3)</td></tr>
+<tr><td align="center">10.00.01.10</td><td align="center">134</td><td align="center">9</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(c, a)<br>I4 = NAND(I5, I11)<br>I5 = NAND(I6, I7)<br>I6 = NAND(b, I7)<br>I7 = NAND(a, I3)</td></tr>
+<tr><td align="center">10.00.01.11</td><td align="center">135</td><td align="center">8</td><td>O = NAND(I1, I6)<br>I1 = NAND(I2, I10)<br>I2 = NAND(I3, I6)<br>I3 = NAND(I4, I5)<br>I4 = NAND(c)<br>I5 = NAND(b)<br>I6 = NAND(a, I3)</td></tr>
+<tr><td align="center">10.00.10.01</td><td align="center">137</td><td align="center">6</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(b, a)<br>I4 = NAND(b, I5)<br>I5 = NAND(c)</td></tr>
+<tr><td align="center">10.00.10.10</td><td align="center">138</td><td align="center">5</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(b, I4)<br>I4 = NAND(a)</td></tr>
+<tr><td align="center">10.00.10.11</td><td align="center">139</td><td align="center">5</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(a, b)<br>I4 = NAND(b, I3)</td></tr>
+<tr><td align="center">10.00.11.10</td><td align="center">142</td><td align="center">6</td><td>O = NAND(I1)<br>I1 = NAND(I2, I5)<br>I2 = NAND(c, I3)<br>I3 = NAND(a, I4)<br>I4 = NAND(a, b)<br>I5 = NAND(b, I4)</td></tr>
+<tr><td align="center">10.00.11.11</td><td align="center">143</td><td align="center">5</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(a)<br>I4 = NAND(b, I3)</td></tr>
+<tr><td align="center">10.01.01.10</td><td align="center">150</td><td align="center">9</td><td>O = NAND(I1, I11)<br>I1 = NAND(I2, I5)<br>I2 = NAND(c, I3)<br>I3 = NAND(b, I4)<br>I4 = NAND(b, a)<br>I5 = NAND(I6, I11)<br>I6 = NAND(I3, I9)</td></tr>
+<tr><td align="center">10.01.01.11</td><td align="center">151</td><td align="center">9</td><td>O = NAND(I1, I6)<br>I1 = NAND(I2, I9)<br>I2 = NAND(c, I3)<br>I3 = NAND(c, I4)<br>I4 = NAND(I5, I7)<br>I5 = NAND(b, I6)<br>I6 = NAND(b, a)<br>I7 = NAND(a, I6)</td></tr>
+<tr><td align="center">10.01.10.00</td><td align="center">152</td><td align="center">6</td><td>O = NAND(I1, I7)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(a, b)<br>I4 = NAND(b, I2)</td></tr>
+<tr><td align="center">10.01.10.10</td><td align="center">154</td><td align="center">6</td><td>O = NAND(I1, I7)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c, I3)<br>I3 = NAND(b, I4)<br>I4 = NAND(a)</td></tr>
+<tr><td align="center">10.01.10.11</td><td align="center">155</td><td align="center">6</td><td>O = NAND(I1, I6)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(c, b)<br>I4 = NAND(b, I3)</td></tr>
+<tr><td align="center">10.01.11.10</td><td align="center">158</td><td align="center">8</td><td>O = NAND(I1, I7)<br>I1 = NAND(I2, I5)<br>I2 = NAND(c, I3)<br>I3 = NAND(b, I4)<br>I4 = NAND(a)<br>I5 = NAND(b, I6)<br>I6 = NAND(c, b)<br>I7 = NAND(a, I6)</td></tr>
+<tr><td align="center">10.01.11.11</td><td align="center">159</td><td align="center">6</td><td>O = NAND(I1, I6)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(c, b)<br>I4 = NAND(b, I3)</td></tr>
+<tr><td align="center">10.10.10.00</td><td align="center">168</td><td align="center">4</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(a, b)</td></tr>
+<tr><td align="center">10.10.10.01</td><td align="center">169</td><td align="center">5</td><td>O = NAND(I1, I5)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c, I3)<br>I3 = NAND(a, b)</td></tr>
+<tr><td align="center">10.10.10.11</td><td align="center">171</td><td align="center">2</td><td>O = NAND(I1, c)<br>I1 = NAND(a, b)</td></tr>
+<tr><td align="center">10.10.11.00</td><td align="center">172</td><td align="center">5</td><td>O = NAND(I1)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(a)<br>I4 = NAND(a, b)</td></tr>
+<tr><td align="center">10.10.11.01</td><td align="center">173</td><td align="center">5</td><td>O = NAND(I1, I4)<br>I1 = NAND(I2, I3)<br>I2 = NAND(c)<br>I3 = NAND(a, b)<br>I4 = NAND(c, a)</td></tr>
+<tr><td align="center">10.10.11.10</td><td align="center">174</td><td align="center">3</td><td>O = NAND(I1, c)<br>I1 = NAND(I2, a)<br>I2 = NAND(b)</td></tr>
+<tr><td align="center">10.11.11.00</td><td align="center">188</td><td align="center">6</td><td>O = NAND(I1, I5)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(b)<br>I4 = NAND(a, b)<br>I5 = NAND(a, I4)</td></tr>
+<tr><td align="center">10.11.11.01</td><td align="center">189</td><td align="center">6</td><td>O = NAND(I1, I5)<br>I1 = NAND(I2, I4)<br>I2 = NAND(c, I3)<br>I3 = NAND(b)<br>I4 = NAND(a, b)<br>I5 = NAND(a, c)</td></tr>
+<tr><td align="center">10.11.11.10</td><td align="center">190</td><td align="center">6</td><td>O = NAND(I1, I3)<br>I1 = NAND(I2, b)<br>I2 = NAND(a, b)<br>I3 = NAND(I4)<br>I4 = NAND(c, I5)<br>I5 = NAND(a, I2)</td></tr>
+<tr><td align="center">10.11.11.11</td><td align="center">191</td><td align="center">5</td><td>O = NAND(I1, I2)<br>I1 = NAND(b)<br>I2 = NAND(I3)<br>I3 = NAND(I4, c)<br>I4 = NAND(a)</td></tr>
+<tr><td align="center">11.10.10.00</td><td align="center">232</td><td align="center">7</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(b, c)<br>I3 = NAND(a, I4)<br>I4 = NAND(I5, I6)<br>I5 = NAND(c)<br>I6 = NAND(b)</td></tr>
+<tr><td align="center">11.10.10.01</td><td align="center">233</td><td align="center">8</td><td>O = NAND(I1, I9)<br>I1 = NAND(I2, I3)<br>I2 = NAND(b, c)<br>I3 = NAND(a, I4)<br>I4 = NAND(I5, I7)<br>I5 = NAND(c, I2)<br>I7 = NAND(b, I2)</td></tr>
+<tr><td align="center">11.10.10.10</td><td align="center">234</td><td align="center">4</td><td>O = NAND(I1)<br>I1 = NAND(I2, I3)<br>I2 = NAND(b, c)<br>I3 = NAND(a, c)</td></tr>
+<tr><td align="center">11.10.10.11</td><td align="center">235</td><td align="center">5</td><td>O = NAND(I1, c)<br>I1 = NAND(I2, I4)<br>I2 = NAND(b, I3)<br>I3 = NAND(b, a)<br>I4 = NAND(a, I3)</td></tr>
+<tr><td align="center">11.10.11.11</td><td align="center">239</td><td align="center">4</td><td>O = NAND(I1, I2)<br>I1 = NAND(a)<br>I2 = NAND(I3)<br>I3 = NAND(b, c)</td></tr>
+<tr><td align="center">11.11.11.10</td><td align="center">254</td><td align="center">3</td><td>O = NAND(a, I1)<br>I1 = NAND(I2)<br>I2 = NAND(b, c)</td></tr>
+</body></html>
