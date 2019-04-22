@@ -1,14 +1,15 @@
 # circuit design
 
 Folder descriptions:
-1. Circuit Scaling up(bottom-up)/BESS_database : The NAND optimal network in html and csv format
+1. Circuit Partition(top-down) : Related to Graph Partition.
+--
 2. Circuit Scaling up(bottom-up) : The BESS related NOR gates optimal boolean network generation.
-3. Circuit Partition(top-down) : Related to Graph Partition.
-4. Differential Equation models : On the biological sequential counter design.
-5. NOR_database : The generated NOR gates optimal design for circuit scaling up problem.
-6. Plots: Some statistical plots related to the 4 inputs- 1 output circuit scaling up database.
-7. Plots/Statistical results : statistical data for sum and cumsum for different Max gates allowed in the cell.
-
+3. Circuit Scaling up(bottom-up)/BESS_database : The NAND optimal network in html and csv format
+4. Circuit Scaling up(bottom-up)/NOR_database : The generated NOR gates optimal design for circuit scaling up problem.
+5. Circuit Scaling up(bottom-up)/Plots: Some statistical plots related to the 4 inputs- 1 output circuit scaling up database.
+6. Circuit Scaling up(bottom-up)/Plots/Statistical results : statistical data for sum and cumsum for different Max gates allowed in the cell.
+--
+7. Differential Equation models : On the biological sequential counter design.
 # Two General Problem
 ## 1. Differential Equation of Xnor-SR model
 
