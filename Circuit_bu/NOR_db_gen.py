@@ -53,11 +53,11 @@ NOR_df4 = pd.DataFrame({'Binary': NOR4_database[:, 0], 'Expresso_tts': np.array(
 NOR_df4.to_csv("NOR_database/NOR_df4_db_gen.csv", index=False)
 
 # Import unfiltered data
-# DB_df4_uf = pd.read_csv('NOR_database/NOR_df4_unfiltered.csv')
+# DB_df4_uf = pd.read_csv('NOR_database/NOR_df4.csv')
 DB_df4_uf = pd.read_csv('NOR_database/NOR_df4_db_gen.csv')
 
 
-NOR_df4 == DB_df4_uf
+NOR_df4 = DB_df4_uf
 
 set1 = NOR_df4[NOR_df4.Num_in == 1]
 set2 = NOR_df4[NOR_df4.Num_in == 2]
@@ -158,4 +158,4 @@ dfc_4 = set4.drop(columns=['Permu_int'])
 # The final corrected NOR database
 dfc_final = dfc_1.append(dfc_23).append(dfc_4)
 
-dfc_final.to_csv("NOR_database_Corrected_withoutID.csv", index=False)
+dfc_final.to_csv("NOR_database", index=False)
