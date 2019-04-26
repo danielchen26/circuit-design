@@ -31,8 +31,8 @@ cbs = CallbackSet(cb,cb2,cb3)
 
 
 # Import gate Parameters
-para_s1 = CSV.read("database/para_s1.csv");
-para_s4 = CSV.read("database/para_s4.csv");
+para_s1 = CSV.read("param_db/para_s1.csv");
+para_s4 = CSV.read("param_db/para_s4.csv");
 p1 = para_s1[:,[:repressor, :Y_min, :Y_max, :K, :n]];
 p4 = para_s4[:,[:repressor, :Y_min, :Y_max, :K, :n]];
 
@@ -64,6 +64,7 @@ SR = @ode_def_bare SR_latch begin
     #  $63: A1_AmtR ----> NOT (In: $65:HlyIIR )
     dm_AmtR = ξ*response(AmtR_min, AmtR_max, AmtR_K, AmtR_n, m_HlyIIR) - degradation(m_AmtR)
 end
+
 u0 = SimType([0.0; 0; 0; 0; 0], 0.0)
 p = 0.0
 prob = ODEProblem(SR,u0,(0.0,30.0),p)

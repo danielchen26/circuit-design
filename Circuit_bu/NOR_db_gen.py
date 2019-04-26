@@ -158,4 +158,4 @@ dfc_4 = set4.drop(columns=['Permu_int'])
 # The final corrected NOR database
 dfc_final = dfc_1.append(dfc_23).append(dfc_4)
 
-dfc_final.to_csv("NOR_database", index=False)
+dfc_final.to_csv("NOR_database/NOR_database.csv", index=False)

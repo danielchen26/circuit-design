@@ -1,5 +1,5 @@
 
-using DifferentialEquations, ParameterizedFunctions,Plots;pgfplots()
+using DifferentialEquations, ParameterizedFunctions,Plots;plotly()
 using Latexify
 using CSV, DataFrames
 
@@ -28,7 +28,7 @@ save_positions = (true,true)
 cb = DiscreteCallback(condition, affect!, save_positions=save_positions);
 
 # Import gate Parameters
-para = CSV.read("database/para_s4.csv");
+para = CSV.read("param_db/para_s4.csv");
 p4 = para[:,[:repressor, :Y_min, :Y_max, :K, :n]];
 
 
@@ -64,6 +64,25 @@ function plasmid1(du,u,p,t)
     du[7] = ξ*(BetI_min + (BetI_max - BetI_min)*BetI_K^BetI_n/(BetI_K^BetI_n + (u[4] + u[6])^BetI_n)) - γ*(u[7])
 end
 # u0 = SType([3.0;0.0;1.0;0.4;1.0;0.0;1.0], 0.0)
+
+# Print the latex of DE
+# circuit1 = @ode_def plasmid begin
+#     #  H1_HlyIIR   ---> NOR (pBAD, BetI)
+#     dm_HlyIIR = ξ*(HlyIIR_min + (HlyIIR_max - HlyIIR_min)*HlyIIR_K^HlyIIR_n/(HlyIIR_K^HlyIIR_n + (m_BetI + p)^HlyIIR_n)) - γ*(m_HlyIIR)
+#     # #  N1_LmrA    ----> NOR (pBAD, HlyIIR)
+#     dm_LmrA = ξ*(LmrA_min + (LmrA_max - LmrA_min)*LmrA_K^LmrA_n/(LmrA_K^LmrA_n + (m_HlyIIR + p)^LmrA_n)) - γ*(m_LmrA)
+#     # #  R1_SrpR    ----> NOR (HlyIIR, BetI)
+#     dm_SrpR = ξ*(SrpR_min + (SrpR_max - SrpR_min)*SrpR_K^SrpR_n/(SrpR_K^SrpR_n + (m_HlyIIR + m_BetI)^SrpR_n)) - γ*(m_SrpR)
+#     # #  B3_BM3R1   ----> NOR (LmrA, SrpR)
+#     dm_BM3R1 = ξ*(BM3R1_min + (BM3R1_max - BM3R1_min)*BM3R1_K^BM3R1_n/(BM3R1_K^BM3R1_n + (m_LmrA + m_SrpR)^BM3R1_n)) - γ*(m_BM3R1)
+#     # #  P3_PhIF    ----> NOT (BM3R1 )
+#     dm_PhIF = ξ*(PhIF_min + (PhIF_max - PhIF_min)*PhIF_K^PhIF_n/(PhIF_K^PhIF_n + (m_BM3R1)^PhIF_n)) - γ*(m_PhIF)
+#     # #  R1_PsrA    ----> NOR (PhIF, BetI)
+#     dm_PsrA = ξ*(PsrA_min + (PsrA_max - PsrA_min)*PsrA_K^PsrA_n/(PsrA_K^PsrA_n + (m_PhIF + m_BetI)^PsrA_n)) - γ*(m_PsrA)
+#     # #  E1_BetI    ----> NOR (PsrA, BM3R1 )
+#     dm_BetI = ξ*(BetI_min + (BetI_max - BetI_min)*BetI_K^BetI_n/(BetI_K^BetI_n + (m_BM3R1 + m_PsrA)^BetI_n)) - γ*(m_BetI)
+# end
+# latexify(circuit1) |> print
 
 u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
 p=0.0
