@@ -11,21 +11,21 @@ end
 
 
 
-ts = [1500,2000]
-condition(u,t,integrator) = t in ts
-function affect!(integrator)
-  if integrator.t == ts[1]
-      integrator.p = 0.0
-  elseif integrator.t == ts[2]
-      integrator.p = 0.0
-  # elseif integrator.t == ts[3]
-  #     integrator.p = 1.5
-  # elseif integrator.t == ts[4]
-  #     integrator.p = 0.0
-  end
-end
-save_positions = (true,true)
-cb = DiscreteCallback(condition, affect!, save_positions=save_positions);
+# ts = [1500,2000]
+# condition(u,t,integrator) = t in ts
+# function affect!(integrator)
+#   if integrator.t == ts[1]
+#       integrator.p = 0.0
+#   elseif integrator.t == ts[2]
+#       integrator.p = 0.0
+#   # elseif integrator.t == ts[3]
+#   #     integrator.p = 1.5
+#   # elseif integrator.t == ts[4]
+#   #     integrator.p = 0.0
+#   end
+# end
+# save_positions = (true,true)
+# cb = DiscreteCallback(condition, affect!, save_positions=save_positions);
 
 # Import gate Parameters
 para = CSV.read("param_db/para_s4.csv");
