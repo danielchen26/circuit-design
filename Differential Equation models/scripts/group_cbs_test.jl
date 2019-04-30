@@ -10,7 +10,7 @@ mutable struct SType{T} <: DEDataVector{T}
 end
 
 
-# ---- uncomment below -------
+# ---- uncomment below (consider using integrator later)------
 # ts = [1500,2000]
 # condition(u,t,integrator) = t in ts
 # function affect!(integrator)
