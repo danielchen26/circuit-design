@@ -34,16 +34,24 @@ PsrA = Param_E(Matrix(para)[14,:]...)
 BetI = Param_E(Matrix(para)[3,:]...)
 
 
-# p4 = para[:,[:repressor, :Y_min, :Y_max, :K, :n]];
+# # -------  view response curve
+# response(min, max, K, n, x) = (min + (max - min)*K^n/(K^n + x^n))
+# function response_crv(x, gate::Param_E)
+#     min = gate.min; max = gate.max; K = gate.K; n = gate.n;
+#     y = response.(min,max,K,n,x)
+#     p = plot(x, y, xlims =(0,6),ylims = (0,1))
+#     return p
+# end
 #
-# # Load parameters for each gate
-# HlyIIR_min, HlyIIR_max, HlyIIR_K, HlyIIR_n = convert(Matrix, p4[p4.repressor.=="HlyIIR",[:Y_min, :Y_max, :K, :n]]) 
-# PhIF_min, PhIF_max, PhIF_K, PhIF_n = convert(Matrix, p4[p4.repressor.=="PhIF",[:Y_min, :Y_max, :K, :n]])[1,:]
-# PsrA_min, PsrA_max, PsrA_K, PsrA_n = convert(Matrix, p4[p4.repressor.=="PsrA",[:Y_min, :Y_max, :K, :n]]) 
-# LmrA_min, LmrA_max, LmrA_K, LmrA_n = convert(Matrix, p4[p4.repressor.=="LmrA",[:Y_min, :Y_max, :K, :n]]) 
-# SrpR_min, SrpR_max, SrpR_K, SrpR_n = convert(Matrix, p4[p4.repressor.=="SrpR",[:Y_min, :Y_max, :K, :n]])[4,:]
-# BM3R1_min, BM3R1_max, BM3R1_K, BM3R1_n = convert(Matrix, p4[p4.repressor.=="BM3R1",[:Y_min, :Y_max, :K, :n]])[3,:]
-# BetI_min, BetI_max, BetI_K, BetI_n = convert(Matrix, p4[p4.repressor.=="BetI",[:Y_min, :Y_max, :K, :n]])
+# response_crv(collect(1:0.1:6),HlyIIR)
+# response_crv(collect(1:0.1:6),LmrA)
+# response_crv(collect(1:0.1:6),SrpR)
+# response_crv(collect(1:0.1:6),BM3R1)
+# response_crv(collect(1:0.1:6),PhIF)
+# response_crv(collect(1:0.1:6),PsrA)
+# response_crv(collect(1:0.1:6),BetI)
+# # -------  view response curve
+
 
 γ = 0.025
 ξ = 0.025
@@ -51,22 +59,6 @@ response(min, max, K, n, x) = (min + (max - min)*K^n/(K^n + x^n))
 degradation(x) = γ*x
 
 
-# SR = @ode_def_bare SR_latch begin
-#     # 1.
-#     dm_HlyIIR = ξ*response(HlyIIR_min, HlyIIR_max, HlyIIR_K, HlyIIR_n, m_BetI + p) - degradation(m_HlyIIR)
-#     # 2.
-#     dm_LmrA = ξ*response(LmrA_min, LmrA_max, LmrA_K, LmrA_n, m_HlyIIR + p) - degradation(m_LmrA)
-#     # 3.
-#     dm_SrpR = ξ*response(SrpR_min, SrpR_max, SrpR_K, SrpR_n, m_HlyIIR + m_BetI) - degradation(m_SrpR)
-# 	# 4.
-#     dm_BM3R1 = ξ*response(BM3R1_min, BM3R1_max, BM3R1_K, BM3R1_n, m_LmrA + m_SrpR) - degradation(m_BM3R1)
-#     # 5.
-#     dm_PhIF = ξ*response(PhIF_min, PhIF_max, PhIF_K, PhIF_n, m_BM3R1) - degradation(m_PhIF)
-#     # 6.
-#     dm_PsrA = ξ*response(PsrA_min, PsrA_max, PsrA_K, PsrA_n, m_PhIF + m_BetI ) - degradation(m_PsrA)
-#     # 7.
-#     dm_BetI = ξ*response(BetI_min, BetI_max, BetI_K, BetI_n, m_BM3R1 + m_PsrA) - degradation(m_BetI)
-# end
 
 SR = @ode_def_bare SR_latch begin
     dm_HlyIIR = ξ*response(HlyIIR.min, HlyIIR.max, HlyIIR.K, HlyIIR.n, m_BetI + p) - degradation(m_HlyIIR)

@@ -14,8 +14,8 @@ mutable struct Time
 end
 
 mutable struct Param_Y
-    min:: Float64
     max:: Float64
+    min:: Float64
     K:: Float64
     n:: Float64
 end
@@ -23,7 +23,7 @@ end
 
 
 # Import gate Parameters
-para = CSV.read("DEmodels/param_db/para_y.csv");# load yeast parameters
+para = CSV.read("./DEmodels/param_db/para_y.csv");# load yeast parameters
 
 LexA1 = Param_Y(Matrix(para)[8,2:end]...)
 IcaR = Param_Y(Matrix(para)[7,2:end]...)
@@ -32,6 +32,25 @@ PsrA = Param_Y(Matrix(para)[11,2:end]...)
 BM3RI = Param_Y(Matrix(para)[1,2:end]...)
 HKCI = Param_Y(Matrix(para)[6,2:end]...)
 PhlF = Param_Y(Matrix(para)[10,2:end]...)
+
+# # -------  view response curve
+# response(min, max, K, n, x) = (min + (max - min)*K^n/(K^n + x^n))
+# function response_crv(x, gate::Param_Y)
+#     min = gate.min; max = gate.max; K = gate.K; n = gate.n;
+#     y = response.(min,max,K,n,x)
+#     p = plot(x, y)
+#     return p
+# end
+#
+# st = 0; intv = 0.0001; fn = 3
+# response_crv(collect(st:intv:fn),LexA1)
+# response_crv(collect(st:intv:fn),IcaR)
+# response_crv(collect(st:intv:fn),CI1)
+# response_crv(collect(st:intv:fn),PsrA)
+# response_crv(collect(st:intv:fn),BM3RI)
+# response_crv(collect(st:intv:fn),HKCI)
+# response_crv(collect(st:intv:fn),PhlF)
+# # -------  view response curve
 
 γ = 0.025
 ξ = 0.025
@@ -48,96 +67,77 @@ yeast = @ode_def_bare counter begin
     dm_BM3RI = ξ*response(BM3RI.min, BM3RI.max, BM3RI.K, BM3RI.n, m_PsrA) - degradation(m_BM3RI)
     dm_HKCI = ξ*response(HKCI.min, HKCI.max, HKCI.K, HKCI.n, m_BM3RI + m_PhlF ) - degradation(m_HKCI)
     dm_PhlF = ξ*response(PhlF.min, PhlF.max, PhlF.K, PhlF.n, m_PsrA + m_HKCI) - degradation(m_PhlF)
+end p
+
+p = 0.0
+# Random.seed!(134)
+
+# ------ randomize Initials
+anim = @animate for rd = 1:80
+    u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
+    p = 0.0
+    prob0 = ODEProblem(yeast,u0,(0.0,1000.0),p)
+    sol0 = solve(prob0,Tsit5())
+    plot!(sol0, vars =[:m_HKCI,:m_PhlF], label = ["HKCI" "PhlF"], lw = 2, ylims = (0,22), linecolor = [:orange :green])
 end
+gif(anim, "/tmp/tmp.gif", fps = 10)
 
 
-Random.seed!(134)
 u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
 p = 0.0
-prob0 = ODEProblem(yeast,u0,(0.0,1000.0),p)
+prob0 = ODEProblem(yeast,u0,(0.0,10000.0),p)
 sol0 = solve(prob0,Tsit5())
-plot(sol0,vars=[:m_HKCI,:m_PhlF])#
-
+py_ss = plot(sol0,vars=[:m_HKCI,:m_PhlF],linecolor = [:orange :green])#
 
 u0_1 = SType(sol0[end].x, 20.0)
 p=20.0
 prob1 = ODEProblem(yeast,u0_1,(0.0,2200.0),p)
 sol1 = solve(prob1,Tsit5())
-plot(sol1,vars=[:m_HKCI,:m_PhlF], lw =2,xlabel = "time", ylabel = "concentration")
+py = plot(sol1,vars=[:m_HKCI,:m_PhlF], lw =2,xlabel = "time", ylabel = "concentration")
+savefig(py,"~/Desktop/yeast_oscilation.png")
 
-
-
-
-
-
-
-# test with cbs  ---------------------------------
-
-yeast = @ode_def_bare counter begin
-    dm_LexA1 = ξ*response(LexA1.min, LexA1.max, LexA1.K, LexA1.n, m_PhlF + p) - degradation(m_LexA1)
-    dm_IcaR = ξ*response(IcaR.min, IcaR.max, IcaR.K, IcaR.n, m_LexA1 + p) - degradation(m_IcaR)
-    dm_CI1 = ξ*response(CI1.min, CI1.max, CI1.K, CI1.n, m_LexA1 + m_PhlF) - degradation(m_CI1)
-    dm_PsrA = ξ*response(PsrA.min, PsrA.max, PsrA.K, PsrA.n, m_IcaR + m_CI1) - degradation(m_PsrA)
-    dm_BM3RI = ξ*response(BM3RI.min, BM3RI.max, BM3RI.K, BM3RI.n, m_PsrA) - degradation(m_BM3RI)
-    dm_HKCI = ξ*response(HKCI.min, HKCI.max, HKCI.K, HKCI.n, m_BM3RI + m_PhlF ) - degradation(m_HKCI)
-    dm_PhlF = ξ*response(PhlF.min, PhlF.max, PhlF.K, PhlF.n, m_PsrA + m_HKCI) - degradation(m_PhlF)
-end p
-
-
-u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
-p = [0.0]
-tspan = (0.0,5000.0)
-ts, cb = make_cb([500,1500],1,20.)
-prob = ODEProblem(yeast,u0,tspan,p)
-sol = solve(prob,Tsit5(),callback=cb, tstops=ts)
-
-plot(sol,vars=[:m_HKCI,:m_PhlF])
-
-
-
-
-function make_cb(ts_in, vars...)
-    ts = ts_in
-    condition(u,t,integrator) = t in ts
-    function affect!(integrator)
-        for  i = 1:2: length(vars)
-            if integrator.t == ts[1]
-                integrator.p[vars[i]] = vars[i+1]
-            elseif integrator.t == ts[2]
-                integrator.p[vars[i]] = 0.0
-            end
-        end
-    end
-    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-    @show vars
-    return ts, cb
-end
-
-# test with cbs  ---------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# # test with cbs  ---------------------------------
+#
+# yeast_cb = @ode_def_bare counter begin
+#     dm_LexA1 = ξ*response(LexA1.min, LexA1.max, LexA1.K, LexA1.n, m_PhlF + p) - degradation(m_LexA1)
+#     dm_IcaR = ξ*response(IcaR.min, IcaR.max, IcaR.K, IcaR.n, m_LexA1 + p) - degradation(m_IcaR)
+#     dm_CI1 = ξ*response(CI1.min, CI1.max, CI1.K, CI1.n, m_LexA1 + m_PhlF) - degradation(m_CI1)
+#     dm_PsrA = ξ*response(PsrA.min, PsrA.max, PsrA.K, PsrA.n, m_IcaR + m_CI1) - degradation(m_PsrA)
+#     dm_BM3RI = ξ*response(BM3RI.min, BM3RI.max, BM3RI.K, BM3RI.n, m_PsrA) - degradation(m_BM3RI)
+#     dm_HKCI = ξ*response(HKCI.min, HKCI.max, HKCI.K, HKCI.n, m_BM3RI + m_PhlF ) - degradation(m_HKCI)
+#     dm_PhlF = ξ*response(PhlF.min, PhlF.max, PhlF.K, PhlF.n, m_PsrA + m_HKCI) - degradation(m_PhlF)
+# end p
+#
+#
+# u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
+# p = [0.0]
+# tspan = (0.0,5000.0)
+# ts, cb = make_cb([1000,2000],1,20.)
+# prob = ODEProblem(yeast_cb,u0,tspan,p)
+# sol = solve(prob,Tsit5(),callback=cb, tstops=ts)
+# plot(sol,vars=[:m_HKCI,:m_PhlF])
+#
+#
+#
+#
+# function make_cb(ts_in, vars...)
+#     ts = ts_in
+#     condition(u,t,integrator) = t in ts
+#     function affect!(integrator)
+#         for  i = 1:2: length(vars)
+#             if integrator.t == ts[1]
+#                 integrator.p[vars[i]] = vars[i+1]
+#             elseif integrator.t == ts[2]
+#                 integrator.p[vars[i]] = 0.0
+#             end
+#         end
+#     end
+#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+#     @show vars
+#     return ts, cb
+# end
+#
+# # test with cbs  ---------------------------------
 
 
 
@@ -195,7 +195,7 @@ P_set = []; sol_set =[]; t_set = []
 
 #  1. make system goes to steady state
 rng = MersenneTwister(124)
-p=0; u0= Float64[i for i in rand(rng,1:22,7)]
+p=[0]; u0= Float64[i for i in rand(rng,1:22,7)]
 prob_steady = ODEProblem(yeast,u0,(0.0,1500.0),p); sol_steady = solve(prob_steady,Tsit5())
 plot(sol_steady,vars=[(0,6),(0,7)])
 
@@ -203,18 +203,18 @@ p1 = zeros(size(sol_steady.t))
 push!(t_set, sol_steady.t)
 
 #  Set the time parameters
-time = Time(400, 570)
+time = Time(350, 1500)
 
 
-for cycle = 1:5
+for cycle = 1:1
 #   1. Add inpulse p=20 for 600
-    p = 20;
+    p = [20];
     if cycle ==1
         u0_1= SType(sol_steady[end], 20.0)
     else
         u0_1= SType(sol_relax[end].x, 20.0)
     end
-    prob_impulse = ODEProblem(SR,u0_1,(0.0,time.p),p) ; sol_impulse = solve(prob_impulse,Tsit5())
+    prob_impulse = ODEProblem(yeast,u0_1,(0.0,time.p),p) ; sol_impulse = solve(prob_impulse,Tsit5())
     display(plot(sol_impulse,vars=[(0,6),(0,7)]))
 
     p_on = zeros(size(sol_impulse.t)) .+ 20
@@ -227,16 +227,16 @@ for cycle = 1:5
     end
 
 #   2. Relax system for 1500
-    p = 0; u0_2= SType(sol_impulse[end].x, 20.0)
-    prob_relax = ODEProblem(SR,u0_2,(0.0,time.wait),p) ; sol_relax = solve(prob_relax,Tsit5())
+    p = [0]; u0_2= SType(sol_impulse[end].x, 0.0)
+    prob_relax = ODEProblem(yeast,u0_2,(0.0,time.wait),p) ; sol_relax = solve(prob_relax,Tsit5())
     display(plot(sol_relax,vars=[(0,6),(0,7)]))
 
     p_off = zeros(size(sol_relax.t))
     t2_n = sol_relax.t .+ t1_n[end]
     push!(t_set, t2_n)
 
-    push!(P_set, p_on);     P_set = push!(P_set, p_off);
-    push!(sol_set, [i.x for i in sol_impulse.u]);     sol_set = push!(sol_set, [i.x for i in sol_relax.u]);
+    push!(P_set, p_on);     push!(P_set, p_off);
+    push!(sol_set, [i.x for i in sol_impulse.u]);      push!(sol_set, [i.x for i in sol_relax.u]);
 end
 
 t_set_f = vcat(t_set...)
