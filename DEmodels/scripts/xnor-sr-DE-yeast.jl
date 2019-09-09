@@ -97,46 +97,90 @@ py = plot(sol1,vars=[:m_HKCI,:m_PhlF], lw =2,xlabel = "time", ylabel = "concentr
 savefig(py,"~/Desktop/yeast_oscilation.png")
 
 # # test with cbs  ---------------------------------
-#
-# yeast_cb = @ode_def_bare counter begin
-#     dm_LexA1 = ξ*response(LexA1.min, LexA1.max, LexA1.K, LexA1.n, m_PhlF + p) - degradation(m_LexA1)
-#     dm_IcaR = ξ*response(IcaR.min, IcaR.max, IcaR.K, IcaR.n, m_LexA1 + p) - degradation(m_IcaR)
-#     dm_CI1 = ξ*response(CI1.min, CI1.max, CI1.K, CI1.n, m_LexA1 + m_PhlF) - degradation(m_CI1)
-#     dm_PsrA = ξ*response(PsrA.min, PsrA.max, PsrA.K, PsrA.n, m_IcaR + m_CI1) - degradation(m_PsrA)
-#     dm_BM3RI = ξ*response(BM3RI.min, BM3RI.max, BM3RI.K, BM3RI.n, m_PsrA) - degradation(m_BM3RI)
-#     dm_HKCI = ξ*response(HKCI.min, HKCI.max, HKCI.K, HKCI.n, m_BM3RI + m_PhlF ) - degradation(m_HKCI)
-#     dm_PhlF = ξ*response(PhlF.min, PhlF.max, PhlF.K, PhlF.n, m_PsrA + m_HKCI) - degradation(m_PhlF)
-# end p
-#
-#
-# u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
-# p = [0.0]
-# tspan = (0.0,5000.0)
-# ts, cb = make_cb([1000,2000],1,20.)
-# prob = ODEProblem(yeast_cb,u0,tspan,p)
-# sol = solve(prob,Tsit5(),callback=cb, tstops=ts)
-# plot(sol,vars=[:m_HKCI,:m_PhlF])
-#
-#
-#
-#
-# function make_cb(ts_in, vars...)
-#     ts = ts_in
-#     condition(u,t,integrator) = t in ts
-#     function affect!(integrator)
-#         for  i = 1:2: length(vars)
-#             if integrator.t == ts[1]
-#                 integrator.p[vars[i]] = vars[i+1]
-#             elseif integrator.t == ts[2]
-#                 integrator.p[vars[i]] = 0.0
-#             end
-#         end
-#     end
-#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-#     @show vars
-#     return ts, cb
-# end
-#
+
+yeast_cb = @ode_def_bare counter begin
+    dm_LexA1 = ξ*response(LexA1.min, LexA1.max, LexA1.K, LexA1.n, m_PhlF + p) - degradation(m_LexA1)
+    dm_IcaR = ξ*response(IcaR.min, IcaR.max, IcaR.K, IcaR.n, m_LexA1 + p) - degradation(m_IcaR)
+    dm_CI1 = ξ*response(CI1.min, CI1.max, CI1.K, CI1.n, m_LexA1 + m_PhlF) - degradation(m_CI1)
+    dm_PsrA = ξ*response(PsrA.min, PsrA.max, PsrA.K, PsrA.n, m_IcaR + m_CI1) - degradation(m_PsrA)
+    dm_BM3RI = ξ*response(BM3RI.min, BM3RI.max, BM3RI.K, BM3RI.n, m_PsrA) - degradation(m_BM3RI)
+    dm_HKCI = ξ*response(HKCI.min, HKCI.max, HKCI.K, HKCI.n, m_BM3RI + m_PhlF ) - degradation(m_HKCI)
+    dm_PhlF = ξ*response(PhlF.min, PhlF.max, PhlF.K, PhlF.n, m_PsrA + m_HKCI) - degradation(m_PhlF)
+end p
+
+
+u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
+p = [0.0]
+tspan = (0.0,5000.0)
+# ts, cb = make_cb([1000,1600],1,20.)
+# ts, cb =make_cb2([1000,1600,3000,3600],  20., 0., 20., 0.)
+ts, cb = mk_cb_mul([1000,1600,3000,3600], 20., 0., 20., 0.)
+prob = ODEProblem(yeast_cb,u0,tspan,p)
+sol = solve(prob,Tsit5(),callback=cb, tstops=ts, reltol = 1e-15,abstol = 1e-19)
+plot(sol,vars=[:m_HKCI,:m_PhlF])
+
+
+using Interact
+u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
+p = [0.0]
+@manipulate for Δ = 1.:1000., δ = 1.:50.
+    ts, cb = mk_cb_mul([1000, 1000 + Δ, 3000 , 3000 + Δ], δ, 0., δ, 0.)
+    prob = ODEProblem(yeast_cb,u0,tspan,p)
+    sol = solve(prob,Tsit5(),callback=cb, tstops=ts, reltol = 1e-15,abstol = 1e-19)
+    plot(sol,vars=[:m_HKCI,:m_PhlF])
+end
+
+
+
+
+function make_cb(ts_in, vars...)
+    ts = ts_in
+    condition(u,t,integrator) = t in ts
+    function affect!(integrator)
+        for  i = 1:2: length(vars)
+            if integrator.t == ts[1]
+                integrator.p[vars[i]] = vars[i+1]
+            elseif integrator.t == ts[2]
+                integrator.p[vars[i]] = 0.0
+            end
+        end
+    end
+    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+    @show vars
+    return ts, cb
+end
+function make_cb2(ts, vars...)
+    condition(u,t,integrator) = t in ts
+    function affect!(integrator)
+      if integrator.t == ts[1]
+          integrator.p[1] = vars[1]
+      elseif integrator.t == ts[2]
+          integrator.p[1] = vars[2]
+      elseif integrator.t == ts[3]
+          integrator.p[1] = vars[3]
+      elseif integrator.t == ts[4]
+          integrator.p[1] = vars[4]
+      end
+    end
+    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+    @show vars
+    return ts, cb
+end
+make_cb2([1000,1500,3000,3600],  20., 0., 20., 0.)
+function mk_cb_mul(ts, vars...)
+    condition(u,t,integrator) = t in ts
+    function affect!(integrator)
+        for i in eachindex(ts)
+            if integrator.t == ts[i]
+                integrator.p[1] = vars[i]
+            end
+        end
+    end
+    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+    @show vars
+    return ts, cb
+end
+mk_cb_mul([300,400,500,600], 0., 20., 0., 20.)
 # # test with cbs  ---------------------------------
 
 
