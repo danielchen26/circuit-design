@@ -20,7 +20,7 @@ mutable struct Param_Y
     n:: Float64
 end
 
-
+include("functions.jl")
 
 # Import gate Parameters
 para = CSV.read("./DEmodels/param_db/para_y.csv");# load yeast parameters
@@ -73,13 +73,15 @@ p = 0.0
 # Random.seed!(134)
 
 # ------ randomize Initials
-anim = @animate for rd = 1:80
+fig = plot()
+anim = @animate for rd = 1:8
     u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
     p = 0.0
     prob0 = ODEProblem(yeast,u0,(0.0,1000.0),p)
     sol0 = solve(prob0,Tsit5())
-    plot!(sol0, vars =[:m_HKCI,:m_PhlF], label = ["HKCI" "PhlF"], lw = 2, ylims = (0,22), linecolor = [:orange :green])
+    plot!(fig, sol0, vars =[:m_HKCI,:m_PhlF], label = ["HKCI" "PhlF"], lw = 2, ylims = (0,22), linecolor = [:orange :green], legend = true)
 end
+plot!(anim,[], label =["HKCI" "PhlF"] )
 gif(anim, "/tmp/tmp.gif", fps = 10)
 
 
@@ -94,10 +96,15 @@ p=20.0
 prob1 = ODEProblem(yeast,u0_1,(0.0,2200.0),p)
 sol1 = solve(prob1,Tsit5())
 py = plot(sol1,vars=[:m_HKCI,:m_PhlF], lw =2,xlabel = "time", ylabel = "concentration")
-savefig(py,"~/Desktop/yeast_oscilation.png")
+# savefig(py,"~/Desktop/yeast_oscilation.png")
+
+
+
+
+
+
 
 # # test with cbs  ---------------------------------
-
 yeast_cb = @ode_def_bare counter begin
     dm_LexA1 = ξ*response(LexA1.min, LexA1.max, LexA1.K, LexA1.n, m_PhlF + p) - degradation(m_LexA1)
     dm_IcaR = ξ*response(IcaR.min, IcaR.max, IcaR.K, IcaR.n, m_LexA1 + p) - degradation(m_IcaR)
@@ -116,7 +123,7 @@ tspan = (0.0,5000.0)
 # ts, cb =make_cb2([1000,1600,3000,3600],  20., 0., 20., 0.)
 ts, cb = mk_cb_mul([1000,1600,3000,3600], 20., 0., 20., 0.)
 prob = ODEProblem(yeast_cb,u0,tspan,p)
-sol = solve(prob,Tsit5(),callback=cb, tstops=ts, reltol = 1e-15,abstol = 1e-19)
+sol = solve(prob,SSRootfind(),callback=cb, tstops=ts, reltol = 1e-15,abstol = 1e-19)
 plot(sol,vars=[:m_HKCI,:m_PhlF])
 
 
@@ -126,70 +133,13 @@ p = [0.0]
 @manipulate for Δ = 1.:1000., δ = 1.:50.
     ts, cb = mk_cb_mul([1000, 1000 + Δ, 3000 , 3000 + Δ], δ, 0., δ, 0.)
     prob = ODEProblem(yeast_cb,u0,tspan,p)
-    sol = solve(prob,Tsit5(),callback=cb, tstops=ts, reltol = 1e-15,abstol = 1e-19)
+    sol = solve(prob,SSRootfind(),callback=cb, tstops=ts, reltol = 1e-20,abstol = 1e-30)
+    # plot(sol)
     plot(sol,vars=[:m_HKCI,:m_PhlF])
 end
 
 
-
-
-function make_cb(ts_in, vars...)
-    ts = ts_in
-    condition(u,t,integrator) = t in ts
-    function affect!(integrator)
-        for  i = 1:2: length(vars)
-            if integrator.t == ts[1]
-                integrator.p[vars[i]] = vars[i+1]
-            elseif integrator.t == ts[2]
-                integrator.p[vars[i]] = 0.0
-            end
-        end
-    end
-    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-    @show vars
-    return ts, cb
-end
-function make_cb2(ts, vars...)
-    condition(u,t,integrator) = t in ts
-    function affect!(integrator)
-      if integrator.t == ts[1]
-          integrator.p[1] = vars[1]
-      elseif integrator.t == ts[2]
-          integrator.p[1] = vars[2]
-      elseif integrator.t == ts[3]
-          integrator.p[1] = vars[3]
-      elseif integrator.t == ts[4]
-          integrator.p[1] = vars[4]
-      end
-    end
-    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-    @show vars
-    return ts, cb
-end
-make_cb2([1000,1500,3000,3600],  20., 0., 20., 0.)
-function mk_cb_mul(ts, vars...)
-    condition(u,t,integrator) = t in ts
-    function affect!(integrator)
-        for i in eachindex(ts)
-            if integrator.t == ts[i]
-                integrator.p[1] = vars[i]
-            end
-        end
-    end
-    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-    @show vars
-    return ts, cb
-end
-mk_cb_mul([300,400,500,600], 0., 20., 0., 20.)
-# # test with cbs  ---------------------------------
-
-
-
-
-
-
 # Find the lb and ub of the P inpluse and the min time to wait for the next signal
-
 # Find the local minimum index
 locs2 =  findlocalminima(sol1[6,:])
 ind_min1 = [i[1] for i in locs2][2]
@@ -233,14 +183,12 @@ t_ub = t_range[end]
 # set P duration= 600, and t_wait = 1500
 
 # Initialize vector of the final plot
-P_set = []; sol_set =[]; t_set = []
-
-
+P_set = []; sol_set =[]; t_set = [];
 
 #  1. make system goes to steady state
 rng = MersenneTwister(124)
 p=[0]; u0= Float64[i for i in rand(rng,1:22,7)]
-prob_steady = ODEProblem(yeast,u0,(0.0,1500.0),p); sol_steady = solve(prob_steady,Tsit5())
+prob_steady = ODEProblem(yeast,u0,(0.0,1500.0),p); sol_steady = solve(prob_steady,SSRootfind())
 plot(sol_steady,vars=[(0,6),(0,7)])
 
 p1 = zeros(size(sol_steady.t))
@@ -250,7 +198,7 @@ push!(t_set, sol_steady.t)
 time = Time(350, 1500)
 
 
-for cycle = 1:1
+for cycle = 1:4
 #   1. Add inpulse p=20 for 600
     p = [20];
     if cycle ==1
@@ -272,11 +220,12 @@ for cycle = 1:1
 
 #   2. Relax system for 1500
     p = [0]; u0_2= SType(sol_impulse[end].x, 0.0)
-    prob_relax = ODEProblem(yeast,u0_2,(0.0,time.wait),p) ; sol_relax = solve(prob_relax,Tsit5())
+    prob_relax = ODEProblem(yeast,u0_2,(0.0,time.wait),p);
+    global sol_relax = solve(prob_relax,Tsit5())
     display(plot(sol_relax,vars=[(0,6),(0,7)]))
 
     p_off = zeros(size(sol_relax.t))
-    t2_n = sol_relax.t .+ t1_n[end]
+    global t2_n = sol_relax.t .+ t1_n[end]
     push!(t_set, t2_n)
 
     push!(P_set, p_on);     push!(P_set, p_off);
@@ -287,11 +236,28 @@ t_set_f = vcat(t_set...)
 p_set_f = vcat([p1; P_set]...)
 sol_set_f = [sol_steady.u;vcat(sol_set...)]
 
-PsrA = [i[6] for i in sol_set_f]
-BetI = [i[7] for i in sol_set_f]
+HKCI_sol = [i[6] for i in sol_set_f];   PhlF_sol = [i[7] for i in sol_set_f]
 
 #  Final plot
-plot(t_set_f, PsrA,lw =2)
-plot!(t_set_f, BetI, marker = (:star,2),lw = 2)
+plot(t_set_f, HKCI_sol,lw =2)
+plot!(t_set_f, PhlF_sol, marker = (:star,2),lw = 2)
 plot!(t_set_f, p_set_f, lw = 2, line = (:dot, :arrow, 1.9, 3, :green), xlabel = "time", ylabel = "concentration")
 title!("Simulation Result")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # =================== Cost function ===================
+# Θ(x::AbstractFloat) = ifelse(x < 0, zero(x), ifelse(x > 0, one(x), oftype(x,0.5)))
