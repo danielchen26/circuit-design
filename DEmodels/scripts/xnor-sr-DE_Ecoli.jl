@@ -176,14 +176,12 @@ t_ub = t_range[end]
 # set P duration= 600, and t_wait = 1500
 
 # Initialize vector of the final plot
-P_set = []; sol_set =[]; t_set = []
-
-
+P_set = [];sol_set =[];t_set = []
 
 #  1. make system goes to steady state
 rng = MersenneTwister(124)
 p=0; u0= Float64[i for i in rand(rng,1:22,7)]
-prob_steady = ODEProblem(SR,u0,(0.0,1500.0),p); sol_steady = solve(prob_steady,Tsit5())
+prob_steady = ODEProblem(SR,u0,(0.0,1500.0),p); sol_steady = solve(prob_steady,SSRootfind())
 plot(sol_steady,vars=[(0,6),(0,7)])
 
 p1 = zeros(size(sol_steady.t))
@@ -192,8 +190,7 @@ push!(t_set, sol_steady.t)
 #  Set the time parameters
 time = Time(400, 570)
 
-
-for cycle = 1:5
+for cycle = 1:1
 #   1. Add inpulse p=20 for 600
     p = 20;
     if cycle ==1
@@ -220,10 +217,10 @@ for cycle = 1:5
 
     p_off = zeros(size(sol_relax.t))
     t2_n = sol_relax.t .+ t1_n[end]
-    push!(t_set, t2_n)
+    push!(t_set, t2_n);
 
-    push!(P_set, p_on);     P_set = push!(P_set, p_off);
-    push!(sol_set, [i.x for i in sol_impulse.u]);     sol_set = push!(sol_set, [i.x for i in sol_relax.u]);
+    push!(P_set, p_on); push!(P_set, p_off);
+    push!(sol_set, [i.x for i in sol_impulse.u]);   push!(sol_set, [i.x for i in sol_relax.u]);
 end
 
 t_set_f = vcat(t_set...)
