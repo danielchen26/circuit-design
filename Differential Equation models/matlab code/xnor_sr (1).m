@@ -2,7 +2,7 @@
 
 %% Loading paras
 
-T = readtable('/Users/chentianchi/Desktop/code/circuit design/DEmodels/param_db/para_s4.csv');
+T = readtable('/Users/chentianchi/Desktop/code/circuit design/database/para_s4.csv');
 % strcmp('AmeR',T(1,:).repressor{:})
 row_names = strcat(T.repressor, '_', T.RBS);
 T.Properties.RowNames = row_names;
@@ -17,8 +17,8 @@ BM3R1  = table2struct(T("BM3R1_B3",para_name));
 BetI   = table2struct(T("BetI_E1",para_name));
 
 % ODE
-xi = 0.025
-gma =0.025
+xi = 0.005
+gma =0.005
 
 syms t x p
 plasmid = @(t,x,p)[xi*(HlyIIR.Y_min + (HlyIIR.Y_max - HlyIIR.Y_min)*HlyIIR.K^HlyIIR.n/(HlyIIR.K^HlyIIR.n + (x(7) + p)^HlyIIR.n)) - gma*(x(1));
@@ -34,27 +34,18 @@ figure
 for rd = 1:50
     p=0;
     u0= randi([1 20],1,7);
-    [t,xp] = ode45(@(t,x) plasmid(t,x,p),[0 1e3],u0);
+    [t,xp] = ode45(@(t,x) plasmid(t,x,p),[0 1e4],u0);
 %     figure
 %     plot(t,xp(:,6:7),'LineWidth',2)
-    plot(t,xp(:,6),'-.','LineWidth',2,"Marker",".","Color",'#77AC30','DisplayName','Gate6')
-    
-    legend('Gate6 : PsrA')
-    hold on 
-    plot(t,xp(:,7),'LineWidth',2,"Marker",".","Color",'#D95319','DisplayName','Gate7 : BetI')
+    plot(t,xp(:,6),'LineWidth',2,"Marker","*","Color",'#77AC30','DisplayName','Gate6')
+%     legend('x6')
+    hold on
+    plot(t,xp(:,7),'LineWidth',2,"Marker",".","Color",'#D95319','DisplayName','Gate7')
 %     plot(t,xp,'LineWidth',2,"Marker",".","Color",'#D95319','DisplayName','Gate7')
 
-%     legend('Gate 7')
-
-    xlabel("Time Steps");
-    ylabel("Concentration");
-    title("Randomized initial conditions yield stable states")
-    ax = gca; % current axes
-    ax.FontSize = 20;
-    ax.FontName = "Apple Symbols";
-
+%     legend('x7')
+    title("stable state")
 end
-
 
 %% Two attractors
 
@@ -65,18 +56,15 @@ for rd = 1:100
     u0 = [rand(1,7)*20];% rand(1)+4 rand(1)*0.25]
     [t,xp] = ode45(@(t,x) plasmid(t,x,p),[0 1000.5],u0);
 %     figure
-    plot(xp(:,6),xp(:,7),'-','LineWidth',1);
+    plot(xp(:,6),xp(:,7),'-.','LineWidth',1);
     hold on;
-    plot(xp(end,6),xp(end,7),'Marker' ,'h','MarkerSize',18,'MarkerFaceColor','#D95319')
+    plot(xp(end,6),xp(end,7),'Marker' ,'h','MarkerSize',15)
     
 end
 axis([0 6 0 6])
 xlabel('Gate 6')
 ylabel('Gate 7')
-title('Gate6 vs Gate7 all phase plane trajecteries convergence')
-ax = gca; % current axes
-ax.FontSize = 18;
-ax.FontName = "Apple Symbols";
+title('Gate6 / Gate7 all trajecteries converge to two stable attrctors(marked Hexagram)')
 
 
 %% random seed
@@ -88,7 +76,7 @@ s = rng;
 p=0;
 rng(s)
 u0= randi([1 20],1,7);
-[t,xp] = ode45(@(t,x) plasmid(t,x,p),[0 1e3],u0);
+[t,xp] = ode45(@(t,x) plasmid(t,x,p),[0 1e4],u0);
 figure
 plot(t,xp(:,6),'LineWidth',2,"Marker","*","Color",'#77AC30','DisplayName','Gate6')
 hold on
@@ -97,7 +85,7 @@ legend('Gate 6','Gate 7')
 
 p = 20;
 u0_t1 = xp(end,:);
-[t,xp] = ode45(@(t,x) plasmid(t,x,p),[0 3e3],u0_t1);
+[t,xp] = ode45(@(t,x) plasmid(t,x,p),[0 3e4],u0_t1);
 figure
 plot(t,xp(:,6),'LineWidth',2,"Marker","*","Color",'#77AC30','DisplayName','Gate6')
 hold on
@@ -105,10 +93,7 @@ plot(t,xp(:,7),'LineWidth',2,"Marker",".","Color",'#D95319','DisplayName','Gate7
 legend('Gate 6','Gate 7')
 xlabel('Time')
 ylabel('Concentration')
-title('Circuit oscillatory switching dynamics with constant input signal')
-ax = gca; % current axes
-ax.FontSize = 20;
-ax.FontName = "Apple Symbols";
+title('System continues switching after input is turned on')
 
 
 %% Find the lb and ub of the P inpluse and the min time to wait for the next signal
@@ -266,7 +251,7 @@ t_set = [];
 p=0
 rng(s)
 u0= randi([1 20],1,7);
-[t1,sol_steady] = ode45(@(t,x) plasmid(t,x,p),[0 1e3],u0);
+[t1,sol_steady] = ode45(@(t,x) plasmid(t,x,p),[0 1e4],u0);
 % figure
 % plot(t1,sol_steady(:,6),'LineWidth',2,"Marker","*","Color",'#77AC30','DisplayName','Gate6')
 % hold on
@@ -278,7 +263,7 @@ u0= randi([1 20],1,7);
 p1 = zeros(size(t1));
 t_set = [t_set, t1];
 % Set the time parameters
-Time.p = 400;Time.wait = 1e3;
+Time.p = 3429;Time.wait = 1e4;
 mag = 20
 for cycle = 1:5
     %1. Add inpulse p=20 for 300s
@@ -346,7 +331,7 @@ sol_set_f = [sol_steady; sol_set];
 
 % final plot for all cycles
 figure
-plot(t_set_f,sol_set_f(:,6),'--','LineWidth',1,"Marker",".","Color",'#77AC30','DisplayName','Gate6')
+plot(t_set_f,sol_set_f(:,6),'LineWidth',1,"Marker","*","Color",'#77AC30','DisplayName','Gate6')
 hold on;
 plot(t_set_f,sol_set_f(:,7),'LineWidth',2,"Marker",".","Color",'#D95319','DisplayName','Gate7')
 hold on;
@@ -354,12 +339,9 @@ hold on;
 plot(t_set_f, p_set_f,"-.",'LineWidth',2,"Color",'#7E2F8E')
 legend('Gate 6','Gate 7','Input')
 ylim([0 22])
-xlabel('Time')
-ylabel('Concentration')
-title('Circuit Simulation')
-ax = gca; % current axes
-ax.FontSize = 20;
-ax.FontName = "Apple Symbols";
+title('Circuit Simulation : 8-->2')
+
+
 
 
 
@@ -919,12 +901,7 @@ plot(t_set_f, p_set_f,"-.",'LineWidth',2,"Color",'#7E2F8E')
 legend('Gate 6','Gate 7','Gate 8', 'Input')
 ylim([0 22])
 title('Circuit Simulation : 8-->2')
-xlabel('Time')
-ylabel('Concentration')
-% title('Circuit Simulation with delay( With an extra NOT gate )')
-ax = gca; % current axes
-ax.FontSize = 20;
-ax.FontName = "Apple Symbols";
+
 
 
 %% **Case 2:  8(AmtR) --> NOT -->1(pBAD) 
