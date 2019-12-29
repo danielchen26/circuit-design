@@ -53,7 +53,31 @@ end
 # mk_cb_mul([300,400,500,600], 0., 20., 0., 20.)
 
 
+# =================== Using this right now =================
+function cb_gen(ts, vars...)
+    condition(u,t,integrator) = t in ts
+    function affect!(integrator)
+        for i in eachindex(ts)
+            if integrator.t == ts[i]
+                integrator.p = vars[i]
+            end
+        end
+    end
+    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+    # @show vars
+    return ts, cb
+end
 
+
+function signal_gen(cycle, Δ0,  Δ,  δ)
+    time = [Δ0, Δ0 + δ]
+    signal = [20., 0.]
+    for i in 1:cycle
+        push!(time, Δ0 + i*Δ,  Δ0 + i*Δ + δ)
+        push!(signal, 20., 0.)
+    end
+    return time, signal
+end
 
 
 # # =============== Multi-bit counter Cost function =============================
