@@ -25,11 +25,14 @@ end
 
 γ = 0.025
 ξ = 0.025
-hill(P::Hill,x) = (P.dn + (P.up - P.dn)*P.K^P.n/(P.K^P.n + x^P.n))
+function hill(P::Hill,x)
+    @unpack up,dn,K,n = P
+    (dn + (up - dn)*K^n/(K^n + x^n))
+end
 degradation(x) = γ*x
 
-P = Hill(up = 1.5, dn =0.002, K= 0.11, n =2.81)
 
+P = Hill(up = 1.5, dn =0.002, K= 0.081, n =2.81)
 silico = @ode_def_bare counter begin
     dm_LexA1 = ξ*hill(P, m_PhlF + p)        - degradation(m_LexA1)
     dm_IcaR  = ξ*hill(P, m_LexA1 + p)       - degradation(m_IcaR)
@@ -40,30 +43,76 @@ silico = @ode_def_bare counter begin
     dm_PhlF  = ξ*hill(P, m_PsrA + m_HKCI)   - degradation(m_PhlF)
 end p
 
-
-u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
+P_max = 5
+u0 = SType(Float64[i for i in rand(1:P_max,7)], 0.0)
 p = 0.0
 prob0 = ODEProblem(silico,u0,(0.0,1000.0),p)
 sol0 = solve(prob0,SSRootfind())
-plot(sol0, lw = 2, ylims = (0,22))
+plot(sol0, lw = 2, ylims = (0,P_max), xlabel = "Time", ylabel = "Concentration")
 # plot!(fig, sol0, vars =[:m_HKCI,:m_PhlF], label = ["HKCI" "PhlF"], lw = 2, ylims = (0,22), linecolor = [:orange :green], legend = true)
 
 
 
-
-u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
-p = 0.0
+p = 0.0; u0 = SType(Float64[i for i in rand(1:P_max,7)], p)
 prob0 = ODEProblem(silico,u0,(0.0,10000.0),p)
 sol0 = solve(prob0,SSRootfind())
 py_ss = plot(sol0,vars=[:m_HKCI,:m_PhlF],linecolor = [:orange :green])#
 
-u0_1 = SType(sol0[end].x, 20.0)
-p=20.0
-prob1 = ODEProblem(silico,u0_1,(0.0,5200.0),p)
+p=20.0; u0_1 = SType(sol0[end].x, p)
+prob1 = ODEProblem(silico,u0_1,(0.0,2000.0),p)
 sol1 = solve(prob1,SSRootfind())
 py = plot(sol1,vars=[:m_HKCI,:m_PhlF], lw =2,xlabel = "time", ylabel = "concentration")
 # savefig(py,"~/Desktop/silico_oscilation.png")
 
+
+
+
+#  ========== animation for how K changes the oscillation attenuation =========
+u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
+anim = @animate for Ki = 0.11: 0.1:0.51
+    P = Hill(up = 1.5, dn =0.002, K= Ki, n =2.81)
+    silico = @ode_def_bare counter begin
+        dm_LexA1 = ξ*hill(P, m_PhlF + p)        - degradation(m_LexA1)
+        dm_IcaR  = ξ*hill(P, m_LexA1 + p)       - degradation(m_IcaR)
+        dm_CI1   = ξ*hill(P, m_LexA1 + m_PhlF)  - degradation(m_CI1)
+        dm_PsrA  = ξ*hill(P, m_IcaR + m_CI1)    - degradation(m_PsrA)
+        dm_BM3RI = ξ*hill(P, m_PsrA)            - degradation(m_BM3RI)
+        dm_HKCI  = ξ*hill(P, m_BM3RI + m_PhlF ) - degradation(m_HKCI)
+        dm_PhlF  = ξ*hill(P, m_PsrA + m_HKCI)   - degradation(m_PhlF)
+    end p
+
+    p = 0.0
+    prob0 = ODEProblem(silico,u0,(0.0,10000.0),p)
+    sol0 = solve(prob0,SSRootfind())
+    py_ss = plot(sol0,vars=[:m_HKCI,:m_PhlF],linecolor = [:orange :green])#
+
+    u0_1 = SType(sol0[end].x, 20.0)
+    p=20.0
+    prob1 = ODEProblem(silico,u0_1,(0.0,5200.0),p)
+    sol1 = solve(prob1,SSRootfind())
+    py = plot(sol1,vars=[:m_HKCI,:m_PhlF], lw =2,xlabel = "time", ylabel = "concentration")
+    title!("Simulation Result: K = $Ki")
+    # savefig(py,"~/Desktop/silico_oscilation.png")
+end
+gif(anim, "/tmp/tmp.gif", fps = 1)
+
+
+
+
+
+
+
+#  ========== Mark the local minimum ==========
+plot(sol1, vars=[:m_HKCI])
+locs2 =  findlocalminima(sol1[6,:])
+mark = [i[1] for i in locs2]
+scatter!(sol1[mark], vars=[:m_HKCI], color = :red, marker = :star)
+
+plot!(sol1, vars=[:m_PhlF])
+locs2 =  findlocalminima(sol1[7,:])
+mark = [i[1] for i in locs2]
+scatter!(sol1[mark], vars=[:m_PhlF], color = :orange, marker = :star)
+#  =======
 
 
 
@@ -93,8 +142,6 @@ for ti = 1: ind_min1
         push!(t_wait, sol11.t[stable_t_ind])
     end
 end
-
-
 #  give the min time to wait(lower bound) for the next signal within the switching range
 maximum(t_wait)
 # switching index range
@@ -128,7 +175,7 @@ p1 = zeros(size(sol_steady.t))
 push!(t_set, sol_steady.t)
 
 #  Set the time parameters
-time = Time(458.7, 1500)
+time = Time(t_ub, 1500)
 
 
 for cycle = 1:2

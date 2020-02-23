@@ -78,10 +78,9 @@ anim = @animate for rd = 1:8
     u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
     p = 0.0
     prob0 = ODEProblem(yeast,u0,(0.0,1000.0),p)
-    sol0 = solve(prob0,Tsit5())
-    plot!(fig, sol0, vars =[:m_HKCI,:m_PhlF], label = ["HKCI" "PhlF"], lw = 2, ylims = (0,22), linecolor = [:orange :green], legend = true)
+    sol0 = solve(prob0,SSRootfind())
+    plot!(fig, sol0, vars =[:m_HKCI,:m_PhlF], lw = 2, ylims = (0,22), linecolor = [:orange :green],label =["HKCI" "PhlF"] )
 end
-plot!(anim,[], label =["HKCI" "PhlF"] )
 gif(anim, "/tmp/tmp.gif", fps = 10)
 
 
@@ -116,7 +115,7 @@ yeast_cb = @ode_def_bare counter begin
 end p
 
 
-u0 = SType(Float64[i for i in rand(1:22,7)], 0.0)
+u0 = SType(Float64[i for i in rand(1:22.,7)], 0.0)
 p = [0.0]
 tspan = (0.0,5000.0)
 # ts, cb = make_cb([1000,1600],1,20.)
