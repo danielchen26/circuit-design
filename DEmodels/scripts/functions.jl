@@ -1,4 +1,5 @@
 using DifferentialEquations
+using Optim
 
 # # ======= Callback functions ==========
 # function make_cb(ts_in, vars...)
@@ -68,16 +69,68 @@ function cb_gen(ts, vars...)
 end
 
 
+# function signal_gen(cycle, Δ0,  Δ,  δ,  A)
+#     t0 = [Δ0, Δ0 + δ]; time = [];
+#     signal = [A, 0.]
+#     T_i = [0.,0.]
+#     for i in 1:cycle
+#         async = rand(0.8:0.1:1.2); asyncΔ = async*Δ; #
+#         @show asyncΔ
+#         if i == 1
+#             T_i += [t0[1], t0[1] + δ]
+#             @show T_i
+#         else
+#             T_i += [T_i[1] + asyncΔ, T_i[1] + asyncΔ]
+#             @show T_i
+#         end
+#         # @show time
+#         push!(time, T_i[1], T_i[2])
+#         # @show time
+#         push!(signal, A, 0.)
+#     end
+#     return time, signal
+# end
+
 function signal_gen(cycle, Δ0,  Δ,  δ,  A)
-    time = [Δ0, Δ0 + δ]
+    # t0 = [Δ0, Δ0+ δ]; time = []; push!(time, t0[1], t0[2]);
     signal = [A, 0.]
-    for i in 1:cycle-1
-        push!(time, Δ0 + i*Δ,  Δ0 + i*Δ + δ)
+    time = [];
+    T_i = [Δ0, Δ0+ δ]
+    push!(time, T_i[1], T_i[2]);
+    for i in 1:cycle
+        async = rand(1.:0.1:2); asyncΔ = async*Δ;
+        # println("increase: ", asyncΔ)
+        @. T_i += asyncΔ
+        # println("time: ",T_i, diff(T_i))
+        push!(time, T_i[1], T_i[2])
         push!(signal, A, 0.)
     end
     return time, signal
 end
 
+
+
+
+# ======= control problems initialization ===========
+function init_control(; Δ0 = 1000., Δ = 1000., δ = 270., cycle = 5, A = 20, p = 0.0)
+    Δ0 = Δ0; Δ = Δ; δ = δ; cycle = cycle; A = A
+    # async = rand(1:3); asyncΔ = async*Δ;
+    # tspan = (0.0, Δ0 + cycle*asyncΔ + δ + 500.)
+    time, signal = signal_gen(cycle, Δ0,  Δ,  δ, A)
+    ts, cb = cb_gen([time...], signal...)
+    p = p
+    tspan = (0.0, time[end] + Δ)
+    return Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p
+end
+
+
+
+# ======= find local maximum ========
+function L_max(sol, var_id, ti, tf)
+    f = (t) -> -sol(first(t),idxs=var_id)
+    opt = optimize(f,ti,tf)
+    return opt
+end
 
 
 #  ========================= Plotting functions =================================
@@ -116,19 +169,6 @@ function localminmax_sig(sol1, t_on, opt)
     elseif opt == "lmax"
         return plt_max, mark6_max, mark7_max
     end
-end
-
-
-
-
-# ======= control problems initialization ===========
-function init_control(; Δ0 = 1000., Δ = 1000., δ = 270., cycle = 5, A = 20, p = 0.0)
-    Δ0 = Δ0; Δ = Δ; δ = δ; cycle = cycle; A = A
-    tspan = (0.0, Δ0 + cycle*Δ + δ + 500.)
-    time, signal = signal_gen(cycle, Δ0,  Δ,  δ, A)
-    ts, cb = cb_gen([time...], signal...)
-    p = p
-    return Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p
 end
 
 
