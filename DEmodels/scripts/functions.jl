@@ -1,65 +1,16 @@
 using DifferentialEquations
 using Optim
 
-# # ======= Callback functions ==========
-# function make_cb(ts_in, vars...)
-#     ts = ts_in
-#     condition(u,t,integrator) = t in ts
-#     function affect!(integrator)
-#         for  i = 1:2: length(vars)
-#             if integrator.t == ts[1]
-#                 integrator.p[vars[i]] = vars[i+1]
-#             elseif integrator.t == ts[2]
-#                 integrator.p[vars[i]] = 0.0
-#             end
-#         end
-#     end
-#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-#     @show vars
-#     return ts, cb
-# end
-#
-# function make_cb2(ts, vars...)
-#     condition(u,t,integrator) = t in ts
-#     function affect!(integrator)
-#       if integrator.t == ts[1]
-#           integrator.p[1] = vars[1]
-#       elseif integrator.t == ts[2]
-#           integrator.p[1] = vars[2]
-#       elseif integrator.t == ts[3]
-#           integrator.p[1] = vars[3]
-#       elseif integrator.t == ts[4]
-#           integrator.p[1] = vars[4]
-#       end
-#     end
-#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-#     @show vars
-#     return ts, cb
-# end
-# # make_cb2([1000,1500,3000,3600],  20., 0., 20., 0.)
-#
-# function mk_cb_mul(ts, vars...)
-#     condition(u,t,integrator) = t in ts
-#     function affect!(integrator)
-#         for i in eachindex(ts)
-#             if integrator.t == ts[i]
-#                 integrator.p[1] = vars[i]
-#             end
-#         end
-#     end
-#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-#     @show vars
-#     return ts, cb
-# end
-# mk_cb_mul([300,400,500,600], 0., 20., 0., 20.)
+
 
 # =================== Using this right now =================
-function cb_gen(ts, vars...)
+
+function cb_gen(ts, index, vars...)
     condition(u,t,integrator) = t in ts
     function affect!(integrator)
         for i in eachindex(ts)
             if integrator.t == ts[i]
-                integrator.p = vars[i]
+                integrator.p[index] = vars[i]
             end
         end
     end
@@ -69,27 +20,6 @@ function cb_gen(ts, vars...)
 end
 
 
-# function signal_gen(cycle, Δ0,  Δ,  δ,  A)
-#     t0 = [Δ0, Δ0 + δ]; time = [];
-#     signal = [A, 0.]
-#     T_i = [0.,0.]
-#     for i in 1:cycle
-#         async = rand(0.8:0.1:1.2); asyncΔ = async*Δ; #
-#         @show asyncΔ
-#         if i == 1
-#             T_i += [t0[1], t0[1] + δ]
-#             @show T_i
-#         else
-#             T_i += [T_i[1] + asyncΔ, T_i[1] + asyncΔ]
-#             @show T_i
-#         end
-#         # @show time
-#         push!(time, T_i[1], T_i[2])
-#         # @show time
-#         push!(signal, A, 0.)
-#     end
-#     return time, signal
-# end
 
 function signal_gen(cycle, Δ0,  Δ,  δ,  A)
     # t0 = [Δ0, Δ0+ δ]; time = []; push!(time, t0[1], t0[2]);
@@ -112,12 +42,12 @@ end
 
 
 # ======= control problems initialization ===========
-function init_control(; Δ0 = 1000., Δ = 1000., δ = 270., cycle = 5, A = 20, p = 0.0)
+function init_control(; index = 7, Δ0 = 1000., Δ = 1000., δ = 270., cycle = 5, A = 20, p = 0.0)
     Δ0 = Δ0; Δ = Δ; δ = δ; cycle = cycle; A = A
     # async = rand(1:3); asyncΔ = async*Δ;
     # tspan = (0.0, Δ0 + cycle*asyncΔ + δ + 500.)
     time, signal = signal_gen(cycle, Δ0,  Δ,  δ, A)
-    ts, cb = cb_gen([time...], signal...)
+    ts, cb = cb_gen([time...], index, signal...)
     p = p
     tspan = (0.0, time[end] + Δ)
     return Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p
@@ -135,30 +65,30 @@ end
 
 #  ========================= Plotting functions =================================
 function localminmax_sig(sol1, t_on, opt)
-    plt6_min = plot(sol1, vars=[:m_HKCI], color =:green, xlims = (1:t_on))
+    plt6_min = plot(sol1, vars=[:m1_HKCI], color =:green, xlims = (1:t_on))
     locs6_min =  findlocalminima(sol1[6,:])
     mark6_min = [i[1] for i in locs6_min]
-    scatter!(sol1[mark6_min], vars=[:m_HKCI], xlims = (1:t_on), marker = (:circle, 5, 0.6, :purple, stroke(6, 0.5, :orange, :dot)))
+    scatter!(sol1[mark6_min], vars=[:m1_HKCI], xlims = (1:t_on), marker = (:circle, 1, 0.6, :purple, stroke(2, 0.5, :orange, :dot)))
     title!("Gate 6")
 
-    plt6_max = plot(sol1, vars=[:m_HKCI], color =:green, xlims = (1:t_on))
+    plt6_max = plot(sol1, vars=[:m1_HKCI], color =:green, xlims = (1:t_on))
     locs6_max =  findlocalmaxima(sol1[6,:])
     mark6_max = [i[1] for i in locs6_max]
-    scatter!(sol1[mark6_max], vars=[:m_HKCI], xlims = (1:t_on), marker = (:circle, 5, 0.6, :purple, stroke(6, 0.5, :orange, :dot)))
+    scatter!(sol1[mark6_max], vars=[:m1_HKCI], xlims = (1:t_on), marker = (:circle, 1, 0.6, :purple, stroke(2, 0.5, :orange, :dot)))
     title!("Gate 6")
 
 
 
-    plt7_min = plot(sol1, vars=[:m_PhlF], color = :darkorange, xlims = (1:t_on))
+    plt7_min = plot(sol1, vars=[:m1_PhlF], color = :darkorange, xlims = (1:t_on))
     locs7_min =  findlocalminima(sol1[7,:])
     mark7_min = [i[1] for i in locs7_min]
-    scatter!(sol1[mark7_min], vars=[:m_PhlF], xlims = (1:t_on), marker = (:circle, 5, 0.6, :red, stroke(6, 0.5, :blue, :dot)))
+    scatter!(sol1[mark7_min], vars=[:m1_PhlF], xlims = (1:t_on), marker = (:circle, 1, 0.6, :red, stroke(2, 0.5, :blue, :dot)))
     title!("Gate 7")
 
-    plt7_max = plot(sol1, vars=[:m_PhlF], color = :darkorange, xlims = (1:t_on))
+    plt7_max = plot(sol1, vars=[:m1_PhlF], color = :darkorange, xlims = (1:t_on))
     locs7_max =  findlocalmaxima(sol1[7,:])
     mark7_max = [i[1] for i in locs7_max]
-    scatter!(sol1[mark7_max], vars=[:m_PhlF], xlims = (1:t_on), marker = (:circle, 5, 0.6, :red, stroke(6, 0.5, :blue, :dot)))
+    scatter!(sol1[mark7_max], vars=[:m1_PhlF], xlims = (1:t_on), marker = (:circle, 1, 0.6, :red, stroke(2, 0.5, :blue, :dot)))
     title!("Gate 7")
 
     plt_min = plot(plt6_min,plt7_min, layout = (2,1))
@@ -179,7 +109,7 @@ function Anim_gen_controlproblem(cycle, Δ0,  Δ,  δ, A, sig_rg)
         time, signal = signal_gen(cycle, Δ0,  Δ,  δ, A)
         ts, cb = cb_gen([time...], signal...)
         sol = solve(prob0, Tsit5(), callback=cb, tstops=ts, reltol = 1e-15, abstol = 1e-19)
-        py = plot(sol,vars=[:m_HKCI,:m_PhlF], lw =2,xlabel = "time", ylabel = "concentration", title = "Signal Duration: $δ")
+        py = plot(sol,vars=[:m1_HKCI,:m1_PhlF], lw =2,xlabel = "time", ylabel = "concentration", title = "Signal Duration: $δ")
     end
     return anim
 end
@@ -270,13 +200,69 @@ end
 
 
 
-# # =============== Multi-bit counter Cost function =============================
-# using Parameters
-#
-# function cost_Mbit(P::Hill, Δ, δ, sol)
-#     # First estimate the first oscillation time
-#
-#     # Test two adjacent oscillations
-#     G6 = sol[6,end]; G7 =sol[7,end]
-#
+# # =============== deprecated function =============================
+# function cb_gen(ts, vars...)
+#     condition(u,t,integrator) = t in ts
+#     function affect!(integrator)
+#         for i in eachindex(ts)
+#             if integrator.t == ts[i]
+#                 integrator.p = vars[i]
+#             end
+#         end
+#     end
+#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+#     # @show vars
+#     return ts, cb
 # end
+
+# # ======= Callback functions ==========
+# function make_cb(ts_in, vars...)
+#     ts = ts_in
+#     condition(u,t,integrator) = t in ts
+#     function affect!(integrator)
+#         for  i = 1:2: length(vars)
+#             if integrator.t == ts[1]
+#                 integrator.p[vars[i]] = vars[i+1]
+#             elseif integrator.t == ts[2]
+#                 integrator.p[vars[i]] = 0.0
+#             end
+#         end
+#     end
+#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+#     @show vars
+#     return ts, cb
+# end
+#
+# function make_cb2(ts, vars...)
+#     condition(u,t,integrator) = t in ts
+#     function affect!(integrator)
+#       if integrator.t == ts[1]
+#           integrator.p[1] = vars[1]
+#       elseif integrator.t == ts[2]
+#           integrator.p[1] = vars[2]
+#       elseif integrator.t == ts[3]
+#           integrator.p[1] = vars[3]
+#       elseif integrator.t == ts[4]
+#           integrator.p[1] = vars[4]
+#       end
+#     end
+#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+#     @show vars
+#     return ts, cb
+# end
+# # make_cb2([1000,1500,3000,3600],  20., 0., 20., 0.)
+#
+# function mk_cb_mul(ts, vars...)
+#     condition(u,t,integrator) = t in ts
+#     function affect!(integrator)
+#         for i in eachindex(ts)
+#             if integrator.t == ts[i]
+#                 integrator.p[1] = vars[i]
+#             end
+#         end
+#     end
+#     cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+#     @show vars
+#     return ts, cb
+# end
+# mk_cb_mul([300,400,500,600], 0., 20., 0., 20.)
