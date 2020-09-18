@@ -7,8 +7,55 @@ using ModelingToolkit, OrdinaryDiffEq #DifferentialEquations
 using Plots; gr(fontfamily = "Souce Code Pro for Powerline"); #pyplot()#
 using Latexify, Random, Base
 using CSV, DataFrames, ProgressMeter
-include("functions.jl")# using BlackBoxOptim, LinearAlgebra
-##
+# include("functions.jl")# using BlackBoxOptim, LinearAlgebra
+function cb_gen(ts, index, vars...)
+    condition(u,t,integrator) = t in ts
+    function affect!(integrator)
+        for i in eachindex(ts)
+            if integrator.t == ts[i]
+                integrator.p[index] = vars[i]
+            end
+        end
+    end
+    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
+    # @show vars
+    return ts, cb
+end
+
+function signal_gen(cycle, Δ0,  Δ,  δ,  A)
+    # t0 = [Δ0, Δ0+ δ]; time = []; push!(time, t0[1], t0[2]);
+    signal = [A, 0.]
+    time = [];
+    T_i = [Δ0, Δ0+ δ]
+    push!(time, T_i[1], T_i[2]);
+    for i in 1:cycle
+        async = rand(1.:0.1:2); asyncΔ = async*Δ;
+        # println("increase: ", asyncΔ)
+        @. T_i += asyncΔ
+        # println("time: ",T_i, diff(T_i))
+        push!(time, T_i[1], T_i[2])
+        push!(signal, A, 0.)
+    end
+    return time, signal
+end
+
+function init_control(; index = 7, Δ0 = 1000., Δ = 1000., δ = 270., cycle = 5, A = 20, p = 0.0)
+    Δ0 = Δ0; Δ = Δ; δ = δ; cycle = cycle; A = A
+    # async = rand(1:3); asyncΔ = async*Δ;
+    # tspan = (0.0, Δ0 + cycle*asyncΔ + δ + 500.)
+    time, signal = signal_gen(cycle, Δ0,  Δ,  δ, A)
+    ts, cb = cb_gen([time...], index, signal...)
+    p = p
+    tspan = (0.0, time[end] + Δ)
+    return Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p
+end
+# ======= find local maximum ========
+function L_max(sol, var_id, ti, tf)
+    f = (t) -> -sol(first(t),idxs=var_id)
+    opt = optimize(f,ti,tf)
+    return opt
+end
+## ------ Import package and functions
 
 ## ==== Build multiple counter connectors : 1Bit counter case 📗 =========
 # ==== Define ODEProblem =======
@@ -18,54 +65,39 @@ include("functions.jl")# using BlackBoxOptim, LinearAlgebra
 # dn = 0.002;
 # K = 0.081;
 # n = 2.81;
-mutable struct Hill{T}
-	dn::T
-    up::T
-    K::T
-    n::T
-end
-
-# @unpack dn, up, K, n = Hill(0.002, 1.5, 0.081, 2.81)
-mono_param = Hill(0.002, 1.5, 0.081, 2.81)
-
-
+# mutable struct Hill{T}
+# 	dn::T
+#     up::T
+#     K::T
+#     n::T
+# end
+# # @unpack dn, up, K, n = Hill(0.002, 1.5, 0.081, 2.81)
+# mono_param = Hill(0.002, 1.5, 0.081, 2.81)
 # hill(param::Hill, x) = param.dn + (param.up - param.dn) * param.K^(param.n) / (param.K^(param.n) + abs(x)^(param.n))
+
+
 hill(dn, up, K, n, x) = dn + (up - dn) * K^(n) / (K^(n) + abs(x)^(n))
 deg(x) = γ * x
 #-------------------------- Define a differential equation system
-# @parameters t up dn K n γ ξ p
 @parameters t γ ξ p
-@parameters LexA1_dn LexA1_up LexA1_K LexA1_n 
-@parameters IcaR_dn IcaR_up IcaR_K IcaR_n
-@parameters CI1_dn CI1_up CI1_K CI1_n
-@parameters PsrA_dn PsrA_up PsrA_K PsrA_n
-@parameters BM3RI_dn BM3RI_up BM3RI_K BM3RI_n
-@parameters HKCI_dn HKCI_up HKCI_K HKCI_n
-@parameters PhlF_dn PhlF_up PhlF_K PhlF_n
+@parameters LexA1[1:4] IcaR[1:4] CI1[1:4] PsrA[1:4] BM3RI[1:4] HKCI[1:4] PhlF[1:4]
 @variables m1_LexA1(t) m1_IcaR(t) m1_CI1(t) m1_PsrA(t) m1_BM3RI(t) m1_HKCI(t) m1_PhlF(t)
 @derivatives D'~t
 eqs1 = [
     # Bit 1 =================
-    D(m1_LexA1) ~ ξ * hill(LexA1_dn, LexA1_up, LexA1_K, LexA1_n, m1_PhlF + p)        - deg(m1_LexA1),
-    D(m1_IcaR ) ~ ξ * hill(IcaR_dn, IcaR_up, IcaR_K, IcaR_n, m1_LexA1 + p)       - deg(m1_IcaR),
-    D(m1_CI1  ) ~ ξ * hill(CI1_dn, CI1_up, CI1_K, CI1_n, m1_LexA1 + m1_PhlF) - deg(m1_CI1),
-    D(m1_PsrA ) ~ ξ * hill(PsrA_dn, PsrA_up, PsrA_K, PsrA_n, m1_IcaR + m1_CI1)   - deg(m1_PsrA),
-    D(m1_BM3RI) ~ ξ * hill(BM3RI_dn, BM3RI_up, BM3RI_K, BM3RI_n, m1_PsrA)            - deg(m1_BM3RI),
-    D(m1_HKCI ) ~ ξ * hill(HKCI_dn, HKCI_up, HKCI_K, HKCI_n, m1_BM3RI + m1_PhlF) - deg(m1_HKCI),
-    D(m1_PhlF ) ~ ξ * hill(PhlF_dn, PhlF_up, PhlF_K, PhlF_n, m1_PsrA + m1_HKCI)  - deg(m1_PhlF)]
+    D(m1_LexA1) ~ ξ * hill(LexA1..., m1_PhlF + p)        - deg(m1_LexA1),
+    D(m1_IcaR ) ~ ξ * hill(IcaR...,  m1_LexA1 + p)           - deg(m1_IcaR),
+    D(m1_CI1  ) ~ ξ * hill(CI1...,   m1_LexA1 + m1_PhlF)         - deg(m1_CI1),
+    D(m1_PsrA ) ~ ξ * hill(PsrA...,  m1_IcaR + m1_CI1)       - deg(m1_PsrA),
+    D(m1_BM3RI) ~ ξ * hill(BM3RI..., m1_PsrA)            - deg(m1_BM3RI),
+    D(m1_HKCI ) ~ ξ * hill(HKCI...,  m1_BM3RI + m1_PhlF)     - deg(m1_HKCI),
+    D(m1_PhlF ) ~ ξ * hill(PhlF...,  m1_PsrA + m1_HKCI)      - deg(m1_PhlF)]
 de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF], 
-[ LexA1_dn, LexA1_up, LexA1_K, LexA1_n, 
-  IcaR_dn, IcaR_up, IcaR_K, IcaR_n,
-  CI1_dn, CI1_up, CI1_K, CI1_n, 
-  PsrA_dn, PsrA_up, PsrA_K, PsrA_n, 
-  BM3RI_dn, BM3RI_up, BM3RI_K, BM3RI_n, 
-  HKCI_dn, HKCI_up, HKCI_K, HKCI_n, 
-  PhlF_dn, PhlF_up, PhlF_K, PhlF_n,
-  γ, ξ, p])
+[ LexA1..., IcaR..., CI1..., PsrA..., BM3RI..., HKCI..., PhlF..., γ, ξ, p])
 ode_f1 = ODEFunction(de1)
 
-## Run the 1bit counter problem
-# # ==== Randomized Initials equlibrations =====
+
+## ---------Run the 1bit counter problem with a single shared parameter set
 u0 = rand(1:22., length(ode_f1.syms))
 p = 0.0
 tspan = (0.0, 3000.0)
@@ -81,8 +113,7 @@ param = [ mono_set...,
 prob0 = ODEProblem(ode_f1, u0, tspan, param)
 sol0 = solve(prob0, Tsit5())
 plot(sol0, lw = 2, ylims = (0, 22))
-
-
+## ----------------------------------------------------------------
 
 
 
@@ -101,11 +132,12 @@ mutable struct gate_param_assign{T}
     g6::T
     g7::T
 end
-
 ## Run one example
+"Remember to change the inital control parameter index, here 31 instead of 7. 
+31 because the 1bit counter contains 31 parameters, the control p hass the last index"
 function run_prob_1bit(;init_relax, duration,relax,signal, gate_p_set::gate_param_assign)
     u0 =  rand(1:22., length(ode_f1.syms))
-    Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(Δ0 = init_relax, Δ = relax, δ = duration, A = signal, cycle = 20)
+    Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(index = 31, Δ0 = init_relax, Δ = relax, δ = duration, A = signal, cycle = 3)
     param = [ gate_p_set.g1...,
               gate_p_set.g2...,
               gate_p_set.g3...,
@@ -118,6 +150,10 @@ function run_prob_1bit(;init_relax, duration,relax,signal, gate_p_set::gate_para
     sol = solve(prob0, Tsit5(), callback = cb, tstops = ts, reltol = 1e-13, abstol = 1e-16)
     return sol, ts
 end
+
+
+
+
 # #  ==== Induced by signals with t_on time ======
 # # when constant signal is applied, we expected to see oscillation
 # p = 20.0;
@@ -126,13 +162,12 @@ end
 # sol1 = solve(prob1, SSRootfind())
 # plot(sol1, vars = [:m_HKCI, :m_PhlF], lw = 2)
 
-sol, ts = run_prob_1bit(;init_relax = 2500., duration=270.,relax=2500.,
+sol, ts = run_prob_1bit(;init_relax = 20000., duration=270.,relax=20000.,
                         signal=20.,K=0.081,n=2.81, up= 1.5);
 up= 1.5
 py = plot(sol, vars = [:m1_HKCI,:m1_PhlF],
           lw = 1.5, xlabel = "time", ylabel = "concentration",
           title = "Signal Duration: 270", ylims = (0.,3*up))
-##
 plt = plot( sol,vars = [:m1_HKCI,:m1_PhlF],lw = 1.5,
             xlabel = "time", ylabel = "concentration",
             title = "Signal Duration: 270",
@@ -282,21 +317,326 @@ end
 CSV.write("1Bit_DB_(K = 0.01: 0.05:1., n = 1.:0.2:10., δ = 10:5:500, A = 20., up = 1:1.:10).csv", df_1bit)
 
 
-# import 1bit database
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## ====================================== import 1bit database
 using CSV, DataFrames
-df_1b = CSV.read("1Bit_DB.csv")
-df_1b[10000,:].K, df_1b[10000,:].n, df_1b[10000,:].up
+using Statistics, StatsPlots, DataVoyager
+using Lazy:@>
+using VegaLite, DataFrames, DataFramesMeta
+using Distances
+df_1b = CSV.read("1Bit_DB_(K = 0.01: 0.05:1., n = 1.:0.2:10., δ = 10:5:500, A = 20., up = 1:1.:10).csv")
+df_1b[2577,:]
 
 
-Sample(4, 1:150)
-gate_p_set = gate_param_assign([0.002, df_1b[10000,:].up, df_1b[10000,:].K, df_1b[10000,:].n],
-                               [0.002, df_1b[10000,:].up, df_1b[10000,:].K, df_1b[10000,:].n],
-                               [0.002, df_1b[10000,:].up, df_1b[10000,:].K, df_1b[10000,:].n],
-                               [0.002, df_1b[10000,:].up, df_1b[10000,:].K, df_1b[10000,:].n],
-                               [0.002, df_1b[10000,:].up, df_1b[10000,:].K, df_1b[10000,:].n],
-                               [0.002, df_1b[10000,:].up, df_1b[10000,:].K, df_1b[10000,:].n],
-                               [0.002, df_1b[10000,:].up, df_1b[10000,:].K, df_1b[10000,:].n])
+rand_idx = rand(1:nrow(df_1b), 7)
 
-sol, ts = run_prob_1bit(;init_relax = 2500., duration=320.,relax=2500., signal=20., gate_p_set);
-plot(sol)
+# -----------single shared parameter casse
+
+function gate_p_set_gen(idx, df; shared = true)
+    if shared == true
+        gate_p_set = gate_param_assign([0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n])
+    elseif shared == "random"
+        println("Will randomly select 7 index")
+        rand_idx = rand(1:nrow(df), 7)
+        println("Random index: ", rand_idx)
+        gate_p_set = gate_param_assign([0.002, df[rand_idx[1],:].up, df[rand_idx[1],:].K, df[rand_idx[1],:].n],
+                               [0.002, df[rand_idx[2],:].up, df[rand_idx[2],:].K, df[rand_idx[2],:].n],
+                               [0.002, df[rand_idx[3],:].up, df[rand_idx[3],:].K, df[rand_idx[3],:].n],
+                               [0.002, df[rand_idx[4],:].up, df[rand_idx[4],:].K, df[rand_idx[4],:].n],
+                               [0.002, df[rand_idx[5],:].up, df[rand_idx[5],:].K, df[rand_idx[5],:].n],
+                               [0.002, df[rand_idx[6],:].up, df[rand_idx[6],:].K, df[rand_idx[6],:].n],
+                               [0.002, df[rand_idx[7],:].up, df[rand_idx[7],:].K, df[rand_idx[7],:].n])
+    elseif shared == "gaussian" # the name can be changed, gaussion means the δ for the 7 parameter set should be close
+        println("Make sure the given idx should be an array of length 7")
+        gate_p_set = gate_param_assign([0.002, df[idx[1],:].up, df[idx[1],:].K, df[idx[1],:].n],
+                               [0.002, df[idx[2],:].up, df[idx[2],:].K, df[idx[2],:].n],
+                               [0.002, df[idx[3],:].up, df[idx[3],:].K, df[idx[3],:].n],
+                               [0.002, df[idx[4],:].up, df[idx[4],:].K, df[idx[4],:].n],
+                               [0.002, df[idx[5],:].up, df[idx[5],:].K, df[idx[5],:].n],
+                               [0.002, df[idx[6],:].up, df[idx[6],:].K, df[idx[6],:].n],
+                               [0.002, df[idx[7],:].up, df[idx[7],:].K, df[idx[7],:].n])
+    end 
+    return gate_p_set
+end      
+
+
+# set the shared single parameter set index 
+idx = 1000
+idx_set = [1,2,3,4,5,6,7]
+gate_p_set = gate_p_set_gen(idx_set, dff, shared="gaussian")
+sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
+plot(sol, vars = [:m1_HKCI, :m1_PhlF])
+
+
+
+
+# TO_DO
+# 1. Write a gaussion filter in (n,k) space with k nearest neighour 
+# the (n,k) will be the 2d guassion mean, and we vary the σ to check the multual kl divergence of the 7 (n,k) δ distribution
+# if the we got kl is non zero or above some threshould, we will use the mean value of the δ for the group.
+
+df_1b[1,:]
+first(df_1b,10)
+df_1b[df_1b.K .==[0.011,0.091],:].δ
+
+
+df_new = df_1b[df_1b.δ .== 300,:]
+idx_set = [423,430,433,440,450,451,452]
+df_new[idx_set,:]
+
+
+median(idx_set)
+
+df_ecoli = CSV.read("DEmodels/param_db/para_s4.csv")
+# v = Voyager(df_ecoli)
+
+
+
+gd = groupby(df_1b, [:n,:K])
+@transform(gd, mean_δ = mean(:δ), var_δ = std(:δ))
+using Distances
+evaluate(KLDivergence(),rand(4), rand(4))
+
+using Distributions
+dist = Normal(3, 1)
+cdf(dist, 1)
+
+using KernelDensity, StatsBase
+
+
+
+
+
+
+
+
+
+
+
+
+
+dff = @> begin
+    df_1b
+    @where(:δ .∈ Ref([300.]))
+    # @by(:δ, mean_δ = mean(:δ), std_δ = std(:δ))
+end 
+
+for i = 1:10
+    idx_set = rand(1:nrow(dff), 7)
+    dff[idx_set,:]
+    local gate_p_set = gate_p_set_gen(idx_set, dff, shared="gaussian")
+    local median_δ = dff[Int64(median(idx_set)),:].δ
+    local sol, ts = run_prob_1bit(;init_relax = 5000., duration = median_δ, relax=5000., signal=20., gate_p_set);
+    p = plot(sol, vars = [:m1_HKCI, :m1_PhlF])
+    display(p)
+end 
+
+
+
+
+# @where(df_1b, :K .==0.96, :n .==9.2)
+# @where(df_1b, @. (:K .== 0.96, :n .== 9.2) | (:K .== 0.26,:n .== 4.0)) # not working 
+@where(df_1b, @. (:K == 0.96) & (:n == 9.2) | (:K == 0.26) & (:n == 4.0)) # works
+
+
+dff_rand = dff[idx_set,:]
+rand_select_δ = []
+@time for i  in eachrow(dff_rand)
+    @show  i.K, i.n
+    df_i = @where(df_1b, :K .==i.K, :n .==i.n)
+    push!(rand_select_δ, df_i.δ)
+    # df_iδ =  @linq df_1b |> 
+    #  @where(:K .==i.K, :n .==i.n) |>
+    #  @select(:δ)
+end
+
+
+
+"Generate a dataframe which has 7 randomly selected gates conditioned on a paticular δ"
+function df_7rand_gen(df_1b ; δ = 300)
+    dff = @where(df_1b, :δ .== δ)
+    idx_set = rand(1:nrow(dff), 7)
+    dff_rand = sort!(dff[idx_set,:])
+end 
+
+# ---generate 1 example of 7 random gate condition on default value δ = 300
+dff_rand = df_7rand_gen(df_1b)
+
+# selct a subset of the parameters from N-bit database that contains (n,K) in dff_rand.
+dff_δ = @> begin
+    df_1b
+    # @where((:K .==0.96, :n .==9.2) .| (:K .==0.26, :n .==4.0)) 
+    @where(@. (:K == dff_rand.K[1]) & (:n == dff_rand.n[1]) | (:K == dff_rand.K[2]) & (:n == dff_rand.n[2]) |
+              (:K == dff_rand.K[3]) & (:n == dff_rand.n[3]) | (:K == dff_rand.K[4]) & (:n == dff_rand.n[4]) |
+              (:K == dff_rand.K[5]) & (:n == dff_rand.n[5]) | (:K == dff_rand.K[6]) & (:n == dff_rand.n[6]) |
+              (:K == dff_rand.K[7]) & (:n == dff_rand.n[7]))
+    # showall()
+end 
+
+string.(zip(dff_δ.K, dff_δ.n))
+insertcols!(dff_δ,       # DataFrame to be changed
+    1,                # insert as column 1
+    :point => string.(zip(dff_δ.K, dff_δ.n)),   # populate as "Day" with 1,2,3,..
+)
+
+dff_δ |>
+@vlplot(
+            width=500,
+            height=200,
+            mark={:boxplot, extent="min-max"},
+            x="point:o",
+            y={:δ, axis={title="Duration δ"}},
+        )
+vcat(df_rand_set...) |> 
+        @vlplot(
+            width=500,
+            height=200,
+            mark={:boxplot, extent="min-max"},
+            x="point:o",
+            y={:value, axis={title="Duration δ"}},
+        )
+
+
+
+
+
+
+# calculate pairwise KL distances between each column of δ distribution of 7 gates.
+function KL_δ(dff_δ; vis = true )
+    gd = groupby(dff_δ,:point)
+    keys(gd)
+    # for each group I will sample the distribution and resample the data
+    # KDE for ith point δ distribution
+    U_set  = [kde(gd[i].δ) for i in 1:length(gd)] 
+    # resample from the estimated distribution to get 1000 data points.
+    X = [sample(U.x, weights(U.density), 1000) for U in U_set ]
+    X = reshape(X, :,7)
+    R = pairwise(KLDivergence(), hcat(X...), dims=2)
+    if vis ==true
+        display(heatmap(R, color = :viridis))
+        return R
+    end
+end
+# one instance
+KL_δ(dff_δ)
+
+
+
+
+# -----give a test δ value to begin ----
+"This function generate a list of dataframes which correspond to 7 randomly selected point in n,K space conditioned on a fixed δ"
+function df_rand_set_gen(df_1b, ;δ =300) 
+    dff = @where(df_1b, :δ .== δ)
+    idx_set = rand(1:nrow(dff), 7)
+    dff_rand = dff[idx_set,:]
+
+    rand_select_δ = []
+    # @time [push!(rand_select_δ, @where(df_1b, :K .==i.K, :n .==i.n).δ) for i in eachrow(dff_rand) ]
+    @time for i  in eachrow(dff_rand)
+        df_i = @where(df_1b, :K .==i.K, :n .==i.n)
+        push!(rand_select_δ, df_i.δ)
+    end
+
+    @time point_names = [string(vec(convert(Array, i))) for i in eachrow(dff_rand[[:n,:K]])]
+    rand_select_δ
+
+    df_rand_set = []
+    for i = 1:7
+        df_i = DataFrame(value = rand_select_δ[i], point = point_names[i])
+        push!(df_rand_set, df_i)
+    end 
+    return df_rand_set
+end 
+df_rand_set = df_rand_set_gen(df_1b, ;δ =300) 
+
+
+# boxplot
+"Visualization of distribution of δ values in each randomly selected gate. Style option: boxplot, histogram, violin, density"
+function gates_δ_distribution(df_rand_set; style = "boxplot")
+    if style == "boxplot"
+        vcat(df_rand_set...) |> 
+        @vlplot(
+            width=500,
+            height=200,
+            mark={:boxplot, extent="min-max"},
+            x="point:o",
+            y={:value, axis={title="Duration δ"}},
+        )
+    elseif style == "histogram"
+        vcat(df_rand_set...) |> 
+        @vlplot(
+            width=500,
+            height=60,
+            :bar,
+            x={:value, bin={binned=true,step=3}},
+            y={"count()",title = "Count"},
+            color =:point,
+            row =:point
+        )
+    elseif style == "violin"
+        vcat(df_rand_set...) |>  
+        @vlplot(
+            mark={:area, orient="horizontal"},
+            transform=[
+                {density="value", groupby=["point"],
+                as=["value", "density"]}
+            ],
+            y="value:q",
+            x= {"density:q", stack="center", impute=nothing, title=nothing,
+                axis={labels=false, values=[0], grid=false, ticks=true}},
+            column={"point:n", header={titleOrient="bottom", labelOrient="bottom",
+                    labelPadding=0}},
+            color = "point:n",
+            width=70,
+            spacing=0,
+            config={view={stroke=nothing}}
+        )
+    elseif style == "density"
+        vcat(df_rand_set...) |> 
+        @vlplot(
+            width=500,
+            height=50,
+            :area,
+            transform=[
+                {density="value",bandwidth = 10, groupby=["point"],counts=true}
+            ],
+            x={"value:q", title="Duration δ"},
+            y= {"density:q",stack=true},
+            color={"point:n",scale={scheme=:category20}},
+            opacity={value=0.8},
+            row = :point
+        )
+    end
+end 
+
+# example of 4 different plots for a given δ randomly generated 7 gates.
+plt_box = gates_δ_distribution(df_rand_set, style ="boxplot")
+plt_hist = gates_δ_distribution(df_rand_set, style ="histogram")
+plt_violin = gates_δ_distribution(df_rand_set, style ="violin")
+plt_density = gates_δ_distribution(df_rand_set, style ="density")
+
 
