@@ -419,9 +419,9 @@ function Bit2_plot(sol,up)
     # display(Bit2_plt)
 end
 
-up = 1.5
-sol, ts = run_prob_2bits(;init_relax = 2000., duration=270.,relax=2000.,signal=20,K=0.031,n=1.5, up= up,cycle = 20)
-plt = Bit2_plot(sol,up)
+# up = 1.5
+# sol, ts = run_prob_2bits(;init_relax = 2000., duration=270.,relax=2000.,signal=20,K=0.031,n=1.5, up= up,cycle = 20)
+# plt = Bit2_plot(sol,up)
 
 ##
 anim = @animate for up = 2:0.1:3

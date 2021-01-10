@@ -1,62 +1,16 @@
-## Import Functions
-using ModelingToolkit, DifferentialEquations, Plots;pyplot()
-using Optim
-using Printf, DataFrames, CSV
-using LaTeXStrings
-# using ProgressMeter,
-function cb_gen(ts, index, vars...)
-    condition(u,t,integrator) = t in ts
-    function affect!(integrator)
-        for i in eachindex(ts)
-            if integrator.t == ts[i]
-                integrator.p[index] = vars[i]
-            end
-        end
-    end
-    cb = DiscreteCallback(condition, affect!, save_positions=(true,true));
-    # @show vars
-    return ts, cb
-end
+## Package
+using DataFrames, CSV
+using DifferentialEquations, ModelingToolkit
+using Plots; gr(fontfamily = "Souce Code Pro for Powerline");
+include("functions.jl")
 
-function signal_gen(cycle, Δ0,  Δ,  δ,  A)
-    # t0 = [Δ0, Δ0+ δ]; time = []; push!(time, t0[1], t0[2]);
-    signal = [A, 0.]
-    time = [];
-    T_i = [Δ0, Δ0+ δ]
-    push!(time, T_i[1], T_i[2]);
-    for i in 1:cycle
-        async = rand(1.:0.1:2); asyncΔ = async*Δ;
-        # println("increase: ", asyncΔ)
-        @. T_i += asyncΔ
-        # println("time: ",T_i, diff(T_i))
-        push!(time, T_i[1], T_i[2])
-        push!(signal, A, 0.)
-    end
-    return time, signal
-end
 
-function init_control(; index = 7, Δ0 = 1000., Δ = 1000., δ = 270., cycle = 5, A = 20, p = 0.0)
-    Δ0 = Δ0; Δ = Δ; δ = δ; cycle = cycle; A = A
-    # async = rand(1:3); asyncΔ = async*Δ;
-    # tspan = (0.0, Δ0 + cycle*asyncΔ + δ + 500.)
-    time, signal = signal_gen(cycle, Δ0,  Δ,  δ, A)
-    ts, cb = cb_gen([time...], index, signal...)
-    p = p
-    tspan = (0.0, time[end] + Δ)
-    return Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p
-end
-# ======= find local maximum ========
-function L_max(sol, var_id, ti, tf)
-    f = (t) -> -sol(first(t),idxs=var_id)
-    opt = optimize(f,ti,tf)
-    return opt
-end
+
+
 ## ==== Build multiple counter connectors : 3 Bits counter case 📗 =========
 ### Define a differential equation system
 hill(x) = dn + (up - dn) * K^n / (K^n + abs(x)^n)
-function deg(x)
-    γ * x
-end
+deg(x) = γ * x
 @parameters t up dn K n γ ξ p
 @variables m1_LexA1(t) m1_IcaR(t) m1_CI1(t) m1_PsrA(t) m1_BM3RI(t) m1_HKCI(t) m1_PhlF(t) g1(t) g2(t) g3(t) m2_LexA1(t) m2_IcaR(t) m2_CI1(t) m2_PsrA(t) m2_BM3RI(t) m2_HKCI(t) m2_PhlF(t) g21(t) g22(t) g23(t) g24(t) g25(t) g26(t) m3_LexA1(t) m3_IcaR(t) m3_CI1(t) m3_PsrA(t) m3_BM3RI(t) m3_HKCI(t) m3_PhlF(t)
 @derivatives D'~t
@@ -106,10 +60,21 @@ u0 =  Float64[i for i in rand(1:22, 30)]
 Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(Δ0 = 20000., Δ = 20000., δ = 270, cycle = 20)
 param = [1.5,0.002,0.081,2.81,0.025,0.025,p]
 prob0 = ODEProblem(ode_f3, u0, tspan, param)
-# sol = solve(prob0, Tsit5(), callback = cb, tstops = ts, reltol = 1e-13, abstol = 1e-16)
+sol = solve(prob0, Tsit5(), callback = cb, tstops = ts, reltol = 1e-13, abstol = 1e-16)
 
+## Plots for paper
+function plot_3bit(sol, ts, up, param)
+    C_plt = plot(sol, vars = [:g3], label = "Connector 1", ylims =(0.,Ylim))
+    C2_plt = plot(sol, vars = [:g26], label = "Connector 2", ylims =(0.,Ylim))
+    B1_plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],legend = :topright, ylims =(0.,Ylim))
+    scatter!(B1_plt, ts, 2*ones(length(ts)),label="Signal")
+    B2_plt = plot(sol, vars = [:m2_HKCI, :m2_PhlF],legend = :topright, ylims =(0.,Ylim))
+    B3_plt = plot(sol, vars = [:m3_HKCI, :m3_PhlF],legend = :topright,  ylims =(0.,Ylim))
+    Bit3_plt = plot(C_plt,C2_plt, B1_plt,B2_plt,B3_plt,layout = (5,1),xtickfontsize=15,ytickfontsize=15, size=(1000,800),legend = :topright, legendfont = font("Times new roman", 8), title = ["C1 & Param: $param" "C2" "B1" "B2" "B3"])
+    display(Bit3_plt)
+end
+plot_3bit(sol, ts, up, param)
 
-## Wrap the above problem to a fucntion
 function run_prob_3bits(;init_relax,duration,relax,signal,K,n,up,cycle)
     u0 =  Float64[i for i in rand(1:22, 30)]
     Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(Δ0 = init_relax, Δ = relax, δ = duration, A = signal, cycle = cycle)
@@ -121,66 +86,30 @@ function run_prob_3bits(;init_relax,duration,relax,signal,K,n,up,cycle)
     return sol, ts
 end
 
-## Plots for paper
-# up = 1.5
-# Ylim = 2*up
-# C_plt = plot(sol, vars = [:g3], label = "Connector 1", ylims =(0.,Ylim))
-# C2_plt = plot(sol, vars = [:g26], label = "Connector 2", ylims =(0.,Ylim))
-# B1_plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],legend = :topright, ylims =(0.,Ylim))
-# scatter!(B1_plt, ts, 2*ones(length(ts)),label="Signal")
-# B2_plt = plot(sol, vars = [:m2_HKCI, :m2_PhlF],legend = :topright, ylims =(0.,Ylim))
-# B3_plt = plot(sol, vars = [:m3_HKCI, :m3_PhlF],legend = :topright,  ylims =(0.,Ylim))
-# Bit2_plt = plot(C_plt,C2_plt, B1_plt,B2_plt,B3_plt,layout = (5,1),xtickfontsize=15,ytickfontsize=15, size=(1000,800),legend = :topright, legendfont = font("Times new roman", 8),)
-# ##
-# savefig(Bit2_plt, "3bitdynamics.png")
-# ----- pyplot setting ------
-# Plots.scalefontsizes(0.9) # changing overall fontsize
-# ## optimization for parameters searching
+sol, ts = run_prob_3bits(;init_relax = 5000., duration=270.,relax=5000.,signal=20.,K=0.081,n=2.81, up= 1.5, cycle=20)
 
-function plot_3bit(sol, ts, up)
-    Ylim = 2*up
-    C_plt = plot(sol, vars = [:g3], label = "Connector type 1",
-                legendtitle = "Connector module",
-                ylims =(0.,Ylim))
-    C2_plt = plot(sol, vars = [:g26], label = "Connector type 2",
-                legendtitle = "Connector module",
-                ylims =(0.,Ylim))
-    B1_plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],
-                label = ["Q1: output" L"$\bar{Q}$1: variable to feed back"],
-                legend = :topright,
-                legendtitle = "The first bit counter",
-                ylims =(0.,Ylim))
-    scatter!(B1_plt, ts, 2*ones(length(ts)),label="Signal")
-    B2_plt = plot(sol, vars = [:m2_HKCI, :m2_PhlF],
-                label = ["Q2: output" L"$\bar{Q}$2: variable to feed back"],
-                legend = :topright,
-                legendtitle = "The second bit counter",
-                ylims =(0.,Ylim))
-    B3_plt = plot(sol, vars = [:m3_HKCI, :m3_PhlF],
-                label = ["Q3: output" L"$\bar{Q}$3: variable to feed back"],
-                legend = :topright, 
-                legendtitle = "The third bit counter",
-                ylims =(0.,Ylim))
-    Bit3_plt = plot(
-                    # C_plt,C2_plt, B1_plt,B2_plt,B3_plt,
-                    B1_plt,C_plt,B2_plt,C2_plt,B3_plt,
-                    layout = (5,1),xtickfontsize=11,ytickfontsize=11, size=(1000,800),
-                    legend = :outertopright, legendfont = font("Times new roman", 10),
-                    xlabel = "Time", ylabel = "Concentration",dpi = 400,
-                    # title = ["Carrying bit 1" "Carrying bit 2" "B1" "B2" "B3"]
-                    # title = ["B1" "Carrying bit 1" "B2" "Carrying bit 2" "B3"]
-                    )
-    # display(Bit3_plt)
-    return Bit3_plt
+## Check 3Bits_DB
+db3 = CSV.read("/Users/chentianchi/Desktop/3bt_DB_gen/3Bits_DB.csv")
+db3
+for i =1:size(db3)[1]
+    # i = rand(1:size(db3)[1])
+    δδ = db3[i,:].δ; AA =db3[i,:].A;  KK = db3[i,:].K; nn = db3[i,:].n; upp = db3[i,:].up
+    sol, ts = run_prob_3bits(;init_relax = 5000., duration=δδ,relax=5000.,signal=AA, K=KK, n=nn, up= upp, cycle=20)
+    param = [KK, nn, δδ, AA, upp]
+    plot_3bit(sol, ts, upp, param)
+    cost_bit3(sol, ts, upp)
 end
 
-# for i = 1:3
-sol, ts = run_prob_3bits(;init_relax = 5000., duration=270.,relax=5000.,signal=20.,K=0.081,n=2.81, up= 1.5, cycle=10)
-# sol, ts = run_prob_3bits(;duration=285.,relax=20000.,signal=10.,K=0.091,n=2.9)
-Bit3_plt = plot_3bit(sol, ts, 2.5)
-savefig(Bit3_plt, "./DEmodels/scripts/Paper_plots/3bitdynamics_b.png")
-# end
+
+
+## check B3 switching
 ## Building cost function for param
+i = 1
+δδ = db3[i,:].δ; AA =db3[i,:].A;  KK = db3[i,:].K; nn = db3[i,:].n; upp = db3[i,:].up
+sol, ts = run_prob_3bits(;init_relax = 5000., duration=δδ,relax=5000.,signal=AA, K=KK, n=nn, up= upp, cycle=20)
+param = [KK, nn, δδ, AA, upp]
+plot_3bit(sol, ts, upp, param)
+
 function Carrying_bit(sol, ts)
     ts_ID = []
     C1 = []; C2 = [];
@@ -336,44 +265,5 @@ function cost_bit3(sol, ts, up)
     end
     return costtot
 end
-# costtot = cost_bit3(sol, ts, up)
-##
-function plot_3bit(sol, ts, up, param)
-    Ylim = 3*up
-    C_plt = plot(sol, vars = [:g3], label = "Connector 1", ylims =(0.,Ylim))
-    C2_plt = plot(sol, vars = [:g26], label = "Connector 2", ylims =(0.,Ylim))
-    B1_plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],legend = :topright, ylims =(0.,Ylim))
-    scatter!(B1_plt, ts, 2*ones(length(ts)),label="Signal",ylims =(0.,Ylim))
-    B2_plt = plot(sol, vars = [:m2_HKCI, :m2_PhlF],legend = :topright, ylims =(0.,Ylim))
-    B3_plt = plot(sol, vars = [:m3_HKCI, :m3_PhlF],legend = :topright,  ylims =(0.,Ylim))
-    Bit2_plt = plot(C_plt,C2_plt, B1_plt,B2_plt,B3_plt,layout = (5,1),xtickfontsize=15,ytickfontsize=15, size=(1000,800),legend = :topright, legendfont = font("Times new roman", 8), title = ["C1 & Param: $param" "C2" "B1" "B2" "B3"])
-    display(Bit2_plt)
-end
-## Parameters Searching for  3bits counter
-# ======== Sampling Parameters ===================
-# Varying K, n, δ
-using ProgressMeter
-df3 = DataFrame(K = Float64[], n = Float64[], δ =  Float64[], A =  Float64[], up = Float64[])
-tt = []
-@time @showprogress for K = 0.011: 0.02:0.1, n = 1.5:0.1:4., δ = 250:5:350, A = 20., up = 1:0.1:3 #@showprogress
-    # solve DiffEq given parameters
-    sol, ts = run_prob_3bits(;init_relax = 20000.,duration=δ, relax=20000., signal=A, K=K, n=n, up = up, cycle = 20)
-    # Get cost for this parameters set
-    costtot = cost_bit3(sol, ts, up)
-    println("K:$K n:$n, δ:$δ, A:$A, up:$up")
-    @show costtot
-    param = [K, n, δ, A, up]
-    costtot == 8 ? push!(df3, param) : nothing
 
-    # plot_3bit(sol,ts, up, param)
-    # # count example
-    push!(tt,1.)
-    @show sum(tt)
-    println("\n")
-    # if sum(tt) >= 8.
-    #     break
-    # end
-end
-##
-df3
-CSV.write("3Bits_DB.csv", df3) # 14543x3
+cost_bit3(sol, ts, upp)

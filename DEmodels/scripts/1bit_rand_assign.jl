@@ -4,7 +4,7 @@
 #Author: Tianchi Chen
 ## ------ Import package and functions
 using ModelingToolkit, OrdinaryDiffEq #DifferentialEquations
-using Plots; gr(fontfamily = "Souce Code Pro for Powerline"); #pyplot()#
+using Plots;# gr(fontfamily = "Souce Code Pro for Powerline"); #pyplot()#
 using Latexify, Random, Base
 using CSV, DataFrames, ProgressMeter
 # include("functions.jl")# using BlackBoxOptim, LinearAlgebra
@@ -92,7 +92,7 @@ eqs1 = [
     D(m1_BM3RI) ~ ξ * hill(BM3RI..., m1_PsrA)            - deg(m1_BM3RI),
     D(m1_HKCI ) ~ ξ * hill(HKCI...,  m1_BM3RI + m1_PhlF)     - deg(m1_HKCI),
     D(m1_PhlF ) ~ ξ * hill(PhlF...,  m1_PsrA + m1_HKCI)      - deg(m1_PhlF)]
-de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF], 
+de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF],
 [ LexA1..., IcaR..., CI1..., PsrA..., BM3RI..., HKCI..., PhlF..., γ, ξ, p])
 ode_f1 = ODEFunction(de1)
 
@@ -108,20 +108,12 @@ param = [ mono_set...,
           0.002, 1.5, 0.081, 2.81,
           0.002, 1.5, 0.081, 2.81,
           0.002, 1.5, 0.081, 2.81,
-          0.002, 1.5, 0.081, 2.81, 
+          0.002, 1.5, 0.081, 2.81,
           0.025,0.025,p]
 prob0 = ODEProblem(ode_f1, u0, tspan, param)
 sol0 = solve(prob0, Tsit5())
 plot(sol0, lw = 2, ylims = (0, 22))
 ## ----------------------------------------------------------------
-
-
-
-
-
-
-
-
 
 mutable struct gate_param_assign{T}
 	g1::T
@@ -133,7 +125,7 @@ mutable struct gate_param_assign{T}
     g7::T
 end
 ## Run one example
-"Remember to change the inital control parameter index, here 31 instead of 7. 
+"Remember to change the inital control parameter index, here 31 instead of 7.
 31 because the 1bit counter contains 31 parameters, the control p hass the last index"
 function run_prob_1bit(;init_relax, duration,relax,signal, gate_p_set::gate_param_assign)
     u0 =  rand(1:22., length(ode_f1.syms))
@@ -289,7 +281,7 @@ function cost_bit1(sol, ts, up)
     end
 end
 
-cost_bit1(sol, ts, up)
+# cost_bit1(sol, ts, up)
 
 
 # run the searching
@@ -336,13 +328,16 @@ CSV.write("1Bit_DB_(K = 0.01: 0.05:1., n = 1.:0.2:10., δ = 10:5:500, A = 20., u
 
 
 
-## ====================================== import 1bit database
+## ====================================== import 1bit database ==================================
 using CSV, DataFrames
 using Statistics, StatsPlots, DataVoyager
 using Lazy:@>
 using VegaLite, DataFrames, DataFramesMeta
 using Distances
-df_1b = CSV.read("1Bit_DB_(K = 0.01: 0.05:1., n = 1.:0.2:10., δ = 10:5:500, A = 20., up = 1:1.:10).csv")
+using LaTeXStrings
+using KernelDensity, StatsBase
+using Plots; pyplot()
+df_1b = CSV.read("1Bit_DB_(K = 0.01: 0.05:1., n = 1.:0.2:10., δ = 10:5:500, A = 20., up = 1:1.:10).csv", DataFrame)
 df_1b[2577,:]
 
 
@@ -379,54 +374,51 @@ function gate_p_set_gen(idx, df; shared = true)
                                [0.002, df[idx[5],:].up, df[idx[5],:].K, df[idx[5],:].n],
                                [0.002, df[idx[6],:].up, df[idx[6],:].K, df[idx[6],:].n],
                                [0.002, df[idx[7],:].up, df[idx[7],:].K, df[idx[7],:].n])
-    end 
+    end
     return gate_p_set
-end      
+end
 
 
-# set the shared single parameter set index 
+# set the shared single parameter set index
 idx = 1000
 idx_set = [1,2,3,4,5,6,7]
 gate_p_set = gate_p_set_gen(idx_set, dff, shared="gaussian")
 sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
-plot(sol, vars = [:m1_HKCI, :m1_PhlF])
+plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"])
 
 
 
 
 # TO_DO
-# 1. Write a gaussion filter in (n,k) space with k nearest neighour 
+# 1. Write a gaussion filter in (n,k) space with k nearest neighour
 # the (n,k) will be the 2d guassion mean, and we vary the σ to check the multual kl divergence of the 7 (n,k) δ distribution
 # if the we got kl is non zero or above some threshould, we will use the mean value of the δ for the group.
 
-df_1b[1,:]
-first(df_1b,10)
-df_1b[df_1b.K .==[0.011,0.091],:].δ
+# df_1b[1,:]
+# first(df_1b,10)
+# df_1b[df_1b.K .==[0.011,0.091],:].δ
 
 
-df_new = df_1b[df_1b.δ .== 300,:]
-idx_set = [423,430,433,440,450,451,452]
-df_new[idx_set,:]
+# df_new = df_1b[df_1b.δ .== 300,:]
+# idx_set = [423,430,433,440,450,451,452]
+# df_new[idx_set,:]
 
 
-median(idx_set)
+# median(idx_set)
 
-df_ecoli = CSV.read("DEmodels/param_db/para_s4.csv")
-# v = Voyager(df_ecoli)
+# df_ecoli = CSV.read("DEmodels/param_db/para_s4.csv")
+# # v = Voyager(df_ecoli)
 
 
 
-gd = groupby(df_1b, [:n,:K])
-@transform(gd, mean_δ = mean(:δ), var_δ = std(:δ))
-using Distances
-evaluate(KLDivergence(),rand(4), rand(4))
+# gd = groupby(df_1b, [:n,:K])
+# @transform(gd, mean_δ = mean(:δ), var_δ = std(:δ))
+# using Distances
+# evaluate(KLDivergence(),rand(4), rand(4))
 
-using Distributions
-dist = Normal(3, 1)
-cdf(dist, 1)
-
-using KernelDensity, StatsBase
-
+# using Distributions
+# dist = Normal(3, 1)
+# cdf(dist, 1)
 
 
 
@@ -439,40 +431,32 @@ using KernelDensity, StatsBase
 
 
 
-dff = @> begin
-    df_1b
-    @where(:δ .∈ Ref([300.]))
-    # @by(:δ, mean_δ = mean(:δ), std_δ = std(:δ))
-end 
 
-for i = 1:10
-    idx_set = rand(1:nrow(dff), 7)
-    dff[idx_set,:]
-    local gate_p_set = gate_p_set_gen(idx_set, dff, shared="gaussian")
-    local median_δ = dff[Int64(median(idx_set)),:].δ
-    local sol, ts = run_prob_1bit(;init_relax = 5000., duration = median_δ, relax=5000., signal=20., gate_p_set);
-    p = plot(sol, vars = [:m1_HKCI, :m1_PhlF])
-    display(p)
-end 
+
+
+# dff = @> begin
+#     df_1b
+#     @where(:δ .∈ Ref([300.]))
+#     # @by(:δ, mean_δ = mean(:δ), std_δ = std(:δ))
+# end
+
+# for i = 1:10
+#     idx_set = rand(1:nrow(dff), 7)
+#     dff[idx_set,:]
+#     local gate_p_set = gate_p_set_gen(idx_set, dff, shared="gaussian")
+#     local median_δ = dff[Int64(median(idx_set)),:].δ
+#     local sol, ts = run_prob_1bit(;init_relax = 5000., duration = median_δ, relax=5000., signal=20., gate_p_set);
+#     p = plot(sol, vars = [:m1_HKCI, :m1_PhlF])
+#     display(p)
+# end
 
 
 
 
 # @where(df_1b, :K .==0.96, :n .==9.2)
-# @where(df_1b, @. (:K .== 0.96, :n .== 9.2) | (:K .== 0.26,:n .== 4.0)) # not working 
-@where(df_1b, @. (:K == 0.96) & (:n == 9.2) | (:K == 0.26) & (:n == 4.0)) # works
+# @where(df_1b, @. (:K .== 0.96, :n .== 9.2) | (:K .== 0.26,:n .== 4.0)) # not working
+# @where(df_1b, @. (:K == 0.96) & (:n == 9.2) | (:K == 0.26) & (:n == 4.0)) # works
 
-
-dff_rand = dff[idx_set,:]
-rand_select_δ = []
-@time for i  in eachrow(dff_rand)
-    @show  i.K, i.n
-    df_i = @where(df_1b, :K .==i.K, :n .==i.n)
-    push!(rand_select_δ, df_i.δ)
-    # df_iδ =  @linq df_1b |> 
-    #  @where(:K .==i.K, :n .==i.n) |>
-    #  @select(:δ)
-end
 
 
 
@@ -481,44 +465,103 @@ function df_7rand_gen(df_1b ; δ = 300)
     dff = @where(df_1b, :δ .== δ)
     idx_set = rand(1:nrow(dff), 7)
     dff_rand = sort!(dff[idx_set,:])
-end 
+    return dff, dff_rand, idx_set
+end
 
-# ---generate 1 example of 7 random gate condition on default value δ = 300
-dff_rand = df_7rand_gen(df_1b)
-
-# selct a subset of the parameters from N-bit database that contains (n,K) in dff_rand.
-dff_δ = @> begin
-    df_1b
-    # @where((:K .==0.96, :n .==9.2) .| (:K .==0.26, :n .==4.0)) 
-    @where(@. (:K == dff_rand.K[1]) & (:n == dff_rand.n[1]) | (:K == dff_rand.K[2]) & (:n == dff_rand.n[2]) |
-              (:K == dff_rand.K[3]) & (:n == dff_rand.n[3]) | (:K == dff_rand.K[4]) & (:n == dff_rand.n[4]) |
-              (:K == dff_rand.K[5]) & (:n == dff_rand.n[5]) | (:K == dff_rand.K[6]) & (:n == dff_rand.n[6]) |
-              (:K == dff_rand.K[7]) & (:n == dff_rand.n[7]))
-    # showall()
-end 
-
-string.(zip(dff_δ.K, dff_δ.n))
-insertcols!(dff_δ,       # DataFrame to be changed
-    1,                # insert as column 1
-    :point => string.(zip(dff_δ.K, dff_δ.n)),   # populate as "Day" with 1,2,3,..
-)
-
-dff_δ |>
-@vlplot(
-            width=500,
-            height=200,
-            mark={:boxplot, extent="min-max"},
-            x="point:o",
-            y={:δ, axis={title="Duration δ"}},
-        )
-vcat(df_rand_set...) |> 
+"Generate random selected 7 gates; the subset of gates contains same n,K in the database; the 7 sample gates' index in the database"
+function df_7rand_δ_dist(; style = "histogram")
+    # ---generate 1 example of 7 random gate condition on default value δ = 300
+    dff, dff_rand, idx_set = df_7rand_gen(df_1b)
+    # selct a subset of the parameters from N-bit database that contains (n,K) in dff_rand.
+    dff_δ = @> begin
+        df_1b
+        # @where((:K .==0.96, :n .==9.2) .| (:K .==0.26, :n .==4.0))
+        @where(@. (:K == dff_rand.K[1]) & (:n == dff_rand.n[1]) | (:K == dff_rand.K[2]) & (:n == dff_rand.n[2]) |
+                (:K == dff_rand.K[3]) & (:n == dff_rand.n[3]) | (:K == dff_rand.K[4]) & (:n == dff_rand.n[4]) |
+                (:K == dff_rand.K[5]) & (:n == dff_rand.n[5]) | (:K == dff_rand.K[6]) & (:n == dff_rand.n[6]) |
+                (:K == dff_rand.K[7]) & (:n == dff_rand.n[7]))
+        # showall()
+    end
+    string.(zip(dff_δ.K, dff_δ.n))
+    insertcols!(dff_δ,       # DataFrame to be changed
+        1,                # insert as column 1
+        :point => string.(zip(dff_δ.K, dff_δ.n)),   # populate as "Day" with 1,2,3,..
+    )
+    if style == "boxplot"
+        plt = dff_δ |>
+        @vlplot(
+                    width=500,
+                    height=200,
+                    mark={:boxplot, extent="min-max"},
+                    x="point:o",
+                    y={:δ, axis={title="Duration δ"}},
+                ) |> display
+    elseif style == "histogram"
+        plt = dff_δ |>
         @vlplot(
             width=500,
-            height=200,
-            mark={:boxplot, extent="min-max"},
-            x="point:o",
-            y={:value, axis={title="Duration δ"}},
-        )
+            height=60,
+            :bar,
+            x={:δ, bin={binned=true,step=10}},
+            y={"count()",title = "Count"},
+            color ={:point, title = "Gates (K, n)"},
+            row ={:point, title = "7 Gates δ distribution"}
+            )  |> save("./7gates_plots/hist_delta.svg")
+    end
+    return dff, dff_rand, idx_set, dff_δ
+end
+dff, dff_rand, idx_set, dff_δ = df_7rand_δ_dist()
+pyplot()
+
+function gate_p_set_gen(idx, df; shared = true)
+    if shared == true
+        gate_p_set = gate_param_assign([0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
+                               [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n])
+    elseif shared == "random"
+        println("Will randomly select 7 index")
+        rand_idx = rand(1:nrow(df), 7)
+        println("Random index: ", rand_idx)
+        gate_p_set = gate_param_assign([0.002, df[rand_idx[1],:].up, df[rand_idx[1],:].K, df[rand_idx[1],:].n],
+                               [0.002, df[rand_idx[2],:].up, df[rand_idx[2],:].K, df[rand_idx[2],:].n],
+                               [0.002, df[rand_idx[3],:].up, df[rand_idx[3],:].K, df[rand_idx[3],:].n],
+                               [0.002, df[rand_idx[4],:].up, df[rand_idx[4],:].K, df[rand_idx[4],:].n],
+                               [0.002, df[rand_idx[5],:].up, df[rand_idx[5],:].K, df[rand_idx[5],:].n],
+                               [0.002, df[rand_idx[6],:].up, df[rand_idx[6],:].K, df[rand_idx[6],:].n],
+                               [0.002, df[rand_idx[7],:].up, df[rand_idx[7],:].K, df[rand_idx[7],:].n])
+    elseif shared == "7diff" # the name can be changed, gaussion means the δ for the 7 parameter set should be close
+        println("Make sure the given idx should be an array of length 7")
+        gate_p_set = gate_param_assign([0.002, df[idx[1],:].up, df[idx[1],:].K, df[idx[1],:].n],
+                               [0.002, df[idx[2],:].up, df[idx[2],:].K, df[idx[2],:].n],
+                               [0.002, df[idx[3],:].up, df[idx[3],:].K, df[idx[3],:].n],
+                               [0.002, df[idx[4],:].up, df[idx[4],:].K, df[idx[4],:].n],
+                               [0.002, df[idx[5],:].up, df[idx[5],:].K, df[idx[5],:].n],
+                               [0.002, df[idx[6],:].up, df[idx[6],:].K, df[idx[6],:].n],
+                               [0.002, df[idx[7],:].up, df[idx[7],:].K, df[idx[7],:].n])
+    end
+    return gate_p_set
+end
+
+"Test if the 7 sampled random gates form a feasible counter"
+function test()
+    local gate_p_set = gate_p_set_gen(idx_set, dff, shared="7diff")
+    local median_δ = dff[Int64(median(idx_set)),:].δ
+    local sol, ts = run_prob_1bit(;init_relax = 5000., duration = median_δ, relax=5000., signal=20., gate_p_set);
+    p = plot(sol, vars = [:m1_HKCI, :m1_PhlF],
+            label =["Q" L"\overline{Q}"],
+            xlabel = " Time steps", ylabel = "Concentration",
+            dpi = 300)
+    display(p)
+    return p
+end
+p = test()
+p |> save("./7gates_plots/1bit_exmple.png")
+
+
 
 
 
@@ -526,30 +569,65 @@ vcat(df_rand_set...) |>
 
 
 # calculate pairwise KL distances between each column of δ distribution of 7 gates.
+"Ouput the pairwise KL distances and overlap of 7 quantile numbers associated with 7 gates_δ_distribution"
 function KL_δ(dff_δ; vis = true )
     gd = groupby(dff_δ,:point)
     keys(gd)
     # for each group I will sample the distribution and resample the data
     # KDE for ith point δ distribution
-    U_set  = [kde(gd[i].δ) for i in 1:length(gd)] 
+    U_set  = [kde(gd[i].δ) for i in 1:length(gd)]
     # resample from the estimated distribution to get 1000 data points.
-    X = [sample(U.x, weights(U.density), 1000) for U in U_set ]
-    X = reshape(X, :,7)
+    println("Ssample size from distribution: ", [size(i.density) for i in U_set])
+    U_set_resample = [sample(U.x, weights(U.density), size(U.density)) for U in U_set ] # with size(U.density) number of points
+    # make 7 arrary to matrix
+    X = reshape(U_set_resample, :,7)
+    # calculate pairwise KL divergence.
     R = pairwise(KLDivergence(), hcat(X...), dims=2)
+    # calculate quantile for each δ distribution.
+    qt = [quantile(sample(data.x, weights(data.density), size(data.density)),  weights(data.density),  [0.25, 0.75]) for data in U_set]
+    qt1_max = maximum(first.(qt))
+    qt2_min = minimum([i[2] for i in qt])
+    if qt1_max < qt2_min
+        println("We should obtain a feasible counter")
+    end
     if vis ==true
         display(heatmap(R, color = :viridis))
-        return R
+        return R, qt, qt1_max, qt2_min
     end
+    return R, qt, qt1_max, qt2_min
 end
 # one instance
-KL_δ(dff_δ)
+R, qt, qt1_max, qt2_min = KL_δ(dff_δ)
+qt
+qt1_max, qt2_min
+# calculate the quantile of a distribution
+
+# qt_max should < qt_min
+# qt1_max = maximum(first.(qt))
+# qt2_min = minimum([i[2] for i in qt])
+# if qt1_max < qt2_min
+#     println("We should obtain a feasible counter")
+# end
+
+# function overlap(a,b)
+#     @show c1 = a[1], b[1]
+#     @show c2 = a[2], b[2]
+#     return [maximum(c1),minimum(c2)]
+# end
+
+# qi = overlap(qt[1],qt[2])
+# for i in 1: length(qt)
+#     qi = overlap(qt[i], qt[i+1])
+#     @show qi
+# end
+
 
 
 
 
 # -----give a test δ value to begin ----
 "This function generate a list of dataframes which correspond to 7 randomly selected point in n,K space conditioned on a fixed δ"
-function df_rand_set_gen(df_1b, ;δ =300) 
+function df_rand_set_gen(df_1b, ;δ =300)
     dff = @where(df_1b, :δ .== δ)
     idx_set = rand(1:nrow(dff), 7)
     dff_rand = dff[idx_set,:]
@@ -568,17 +646,17 @@ function df_rand_set_gen(df_1b, ;δ =300)
     for i = 1:7
         df_i = DataFrame(value = rand_select_δ[i], point = point_names[i])
         push!(df_rand_set, df_i)
-    end 
+    end
     return df_rand_set
-end 
-df_rand_set = df_rand_set_gen(df_1b, ;δ =300) 
+end
+df_rand_set = df_rand_set_gen(df_1b, ;δ =300)
 
 
 # boxplot
 "Visualization of distribution of δ values in each randomly selected gate. Style option: boxplot, histogram, violin, density"
 function gates_δ_distribution(df_rand_set; style = "boxplot")
     if style == "boxplot"
-        vcat(df_rand_set...) |> 
+        vcat(df_rand_set...) |>
         @vlplot(
             width=500,
             height=200,
@@ -587,18 +665,18 @@ function gates_δ_distribution(df_rand_set; style = "boxplot")
             y={:value, axis={title="Duration δ"}},
         )
     elseif style == "histogram"
-        vcat(df_rand_set...) |> 
+        vcat(df_rand_set...) |>
         @vlplot(
             width=500,
             height=60,
             :bar,
-            x={:value, bin={binned=true,step=3}},
+            x={:value, bin={binned=true,step=10}},
             y={"count()",title = "Count"},
             color =:point,
             row =:point
         )
     elseif style == "violin"
-        vcat(df_rand_set...) |>  
+        vcat(df_rand_set...) |>
         @vlplot(
             mark={:area, orient="horizontal"},
             transform=[
@@ -616,13 +694,13 @@ function gates_δ_distribution(df_rand_set; style = "boxplot")
             config={view={stroke=nothing}}
         )
     elseif style == "density"
-        vcat(df_rand_set...) |> 
+        vcat(df_rand_set...) |>
         @vlplot(
             width=500,
             height=50,
             :area,
             transform=[
-                {density="value",bandwidth = 10, groupby=["point"],counts=true}
+                {density="value",bandwidth = 1, groupby=["point"],counts=true}
             ],
             x={"value:q", title="Duration δ"},
             y= {"density:q",stack=true},
@@ -631,7 +709,7 @@ function gates_δ_distribution(df_rand_set; style = "boxplot")
             row = :point
         )
     end
-end 
+end
 
 # example of 4 different plots for a given δ randomly generated 7 gates.
 plt_box = gates_δ_distribution(df_rand_set, style ="boxplot")
@@ -640,3 +718,13 @@ plt_violin = gates_δ_distribution(df_rand_set, style ="violin")
 plt_density = gates_δ_distribution(df_rand_set, style ="density")
 
 
+
+
+
+
+function nK_Knn(point; direction = "++", radius = 3, knn = 3)
+    @show point
+
+end
+
+nK_Knn([3.6,0.41])
