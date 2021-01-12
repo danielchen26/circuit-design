@@ -247,6 +247,9 @@ gate_p_set_specific = gate_param_assign(p_set_specific...)
 sol, ts = run_prob_1bit(;init_relax = 5000., duration= 340, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
 plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt", ylims = (0.,3))
 
+# check cost function
+costtot = cost_bit1(sol, ts, up)
+
 ## test random selected 7 gate from para_s4 dataset to see if counter works.
 rand_idx_δ_set = []
 gates_p_set = []
