@@ -210,6 +210,9 @@ end
 
 
 ## test random selected 3 gate from para_s4 dataset to see if counter works.
+# ---------------- #
+# - rand_num = 3 - #
+# ---------------- #
 gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 3)
 # sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
 # dump(gate_p_set)
@@ -275,6 +278,9 @@ costtot = cost_bit1(sol, ts, up)
 
 
 ## test random selected 4 gate from para_s4 dataset to see if counter works.
+# ---------------- #
+# - rand_num = 4 - #
+# ---------------- #
 gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 4)
 # sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
 # dump(gate_p_set)
@@ -308,6 +314,20 @@ end
 # │ 5   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
 # │ 6   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
 # │ 7   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+
+# convert.(Int64, rand_idx) = [15, 15, 12, 6, 20, 15, 15]
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ QacR      │ Q1     │ 0.01    │ 2.4     │ 0.05    │ 2.7     │
+# │ 2   │ QacR      │ Q1     │ 0.01    │ 2.4     │ 0.05    │ 2.7     │
+# │ 3   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+# │ 4   │ BM3R1     │ B3     │ 0.01    │ 0.8     │ 0.26    │ 3.4     │
+# │ 5   │ SrpR      │ S4     │ 0.007   │ 2.1     │ 0.1     │ 2.8     │
+# │ 6   │ QacR      │ Q1     │ 0.01    │ 2.4     │ 0.05    │ 2.7     │
+# │ 7   │ QacR      │ Q1     │ 0.01    │ 2.4     │ 0.05    │ 2.7     │
+
 specific_idx = [13, 16, 1, 3, 13, 13, 13]
 p_set_specific = []
 [push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
@@ -321,36 +341,214 @@ costtot = cost_bit1(sol, ts, up)
 
 
 
+## test random selected 5 gate from para_s4 dataset to see if counter works.
+# ---------------- #
+# - rand_num = 5 - #
+# ---------------- #
+gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 5)
+# sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
+# dump(gate_p_set)
+all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)];up = mean(all_7_up_set);
+
+for dt in 200:5:500
+	sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
+	plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt")
+	# ylims!((0.0,6))
+	display(plt)
+end
+
+@show convert.(Int64,rand_idx)
+@show df[convert.(Int64,rand_idx),:]
+
+## 🔺special case for rand_num = 5 to watch out, seems to have a really wide δ range, but the steady state upper bound seems to be quite small
+# # convert.(Int64, rand_idx) = [9, 9, 8, 8, 13, 9, 9]
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+# │ 2   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+# │ 3   │ IcaRA     │ I1     │ 0.08    │ 2.2     │ 0.1     │ 1.4     │
+# │ 4   │ IcaRA     │ I1     │ 0.08    │ 2.2     │ 0.1     │ 1.4     │
+# │ 5   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+# │ 6   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+# │ 7   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+
+## Working example
+# ---------------- #
+# - rand_num = 5 - #
+# ---------------- #
+# convert.(Int64, rand_idx) = [13, 16, 15, 19, 12, 13, 13]      290 <  δ < 445
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+# │ 2   │ QacR      │ Q2     │ 0.03    │ 2.8     │ 0.21    │ 2.4     │
+# │ 3   │ QacR      │ Q1     │ 0.01    │ 2.4     │ 0.05    │ 2.7     │
+# │ 4   │ SrpR      │ S3     │ 0.004   │ 2.1     │ 0.06    │ 2.8     │
+# │ 5   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+# │ 6   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+# │ 7   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+specific_idx = [13, 16, 15, 19, 12, 13, 13]
+p_set_specific = []
+[push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
+gate_p_set_specific = gate_param_assign(p_set_specific...)
+δ = 400
+sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
+plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$δ")
+display(plt)
+# check cost function
+costtot = cost_bit1(sol, ts, up)
+
+
+
+
+
+## test random selected 6 gate from para_s4 dataset to see if counter works.
+# ---------------- #
+# - rand_num = 6 - #
+# ---------------- #
+gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 6)
+# sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
+# dump(gate_p_set)
+all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)];up = mean(all_7_up_set);
+
+for dt in 200:5:500
+	sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
+	plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt")
+	# ylims!((0.0,6))
+	display(plt)
+end
+
+@show convert.(Int64,rand_idx)
+@show df[convert.(Int64,rand_idx),:]
+
+
+
+
+## Working example
+# ---------------- #
+# - rand_num = 6 - #
+# ---------------- #
+# convert.(Int64, rand_idx) = [13, 7, 4, 15, 5, 2, 13]      365 < δ < 530
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+# │ 2   │ HlyIIR    │ H1     │ 0.07    │ 2.5     │ 0.19    │ 2.6     │
+# │ 3   │ BM3R1     │ B1     │ 0.004   │ 0.5     │ 0.04    │ 3.4     │
+# │ 4   │ QacR      │ Q1     │ 0.01    │ 2.4     │ 0.05    │ 2.7     │
+# │ 5   │ BM3R1     │ B2     │ 0.005   │ 0.5     │ 0.15    │ 2.9     │
+# │ 6   │ AmtR      │ A1     │ 0.06    │ 3.8     │ 0.07    │ 1.6     │
+# │ 7   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+
+# convert.(Int64, rand_idx) = [12, 5, 9, 6, 20, 7, 12]   415 < δ < 440
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+# │ 2   │ BM3R1     │ B2     │ 0.005   │ 0.5     │ 0.15    │ 2.9     │
+# │ 3   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+# │ 4   │ BM3R1     │ B3     │ 0.01    │ 0.8     │ 0.26    │ 3.4     │
+# │ 5   │ SrpR      │ S4     │ 0.007   │ 2.1     │ 0.1     │ 2.8     │
+# │ 6   │ HlyIIR    │ H1     │ 0.07    │ 2.5     │ 0.19    │ 2.6     │
+# │ 7   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+
+# very interesting case 1. ! 💚💚💚💚💚  δ seems can be extremely large , δ > 4000 💚💚💚💚💚
+# convert.(Int64, rand_idx) = [5, 3, 17, 12, 12, 9, 8]
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ BM3R1     │ B2     │ 0.005   │ 0.5     │ 0.15    │ 2.9     │
+# │ 2   │ BetI      │ E1     │ 0.07    │ 3.8     │ 0.41    │ 2.4     │
+# │ 3   │ SrpR      │ S1     │ 0.003   │ 1.3     │ 0.01    │ 2.9     │
+# │ 4   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+# │ 5   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+# │ 6   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+# │ 7   │ IcaRA     │ I1     │ 0.08    │ 2.2     │ 0.1     │ 1.4     │
+
+# very interesting case 2. ! 💚💚💚💚💚 δ has two feasible ranges
+# convert.(Int64, rand_idx) = [7, 12, 7, 13, 18, 17, 6]   310  < δ  < 355    485 < δ < 545
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ HlyIIR    │ H1     │ 0.07    │ 2.5     │ 0.19    │ 2.6     │
+# │ 2   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+# │ 3   │ HlyIIR    │ H1     │ 0.07    │ 2.5     │ 0.19    │ 2.6     │
+# │ 4   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+# │ 5   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
+# │ 6   │ SrpR      │ S1     │ 0.003   │ 1.3     │ 0.01    │ 2.9     │
+# │ 7   │ BM3R1     │ B3     │ 0.01    │ 0.8     │ 0.26    │ 3.4     │
+
+specific_idx = [13, 7, 4, 15, 5, 2, 13]
+p_set_specific = []
+[push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
+gate_p_set_specific = gate_param_assign(p_set_specific...)
+δ = 530
+sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
+plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$δ")
+display(plt)
+# check cost function
+costtot = cost_bit1(sol, ts, up)
+
+
 
 
 
 ## test random selected 7 gate from para_s4 dataset to see if counter works.
-rand_idx_δ_set = []
-gates_p_set = []
+# ---------------- #
+# - rand_num = 7 - #
+# ---------------- #
+gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 7)
+# sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
+# dump(gate_p_set)
+all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)];up = mean(all_7_up_set);
+@show convert.(Int64,rand_idx)
+@show df[convert.(Int64,rand_idx),:]
 
-for i in 1:30
-	gate_p_set,rand_idx = gate_p_set_gen(rand(), df; shared = "random")
-	dump(gate_p_set)
-	all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)]
-	up = mean(all_7_up_set)
-	for dt in 200:5:500
-		sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
-		costtot = cost_bit1(sol, ts, up)
-		@show costtot, dt
-		costtot == 0 ? push!(rand_idx_δ_set, [rand_idx,dt]) && push!(gates_p_set,gate_p_set) : nothing
-		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = "$dt,$rand_idx")
-		display(plt)
-	end
+for dt in 200:5:500
+	sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
+	# costtot = cost_bit1(sol, ts, up)
+	# @show costtot, dt
+	# costtot == 0 ? push!(rand_idx_δ_set, [rand_idx,dt]) && push!(gates_p_set,gate_p_set) : nothing
+	plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt")
+	display(plt)
 end
 
 
-dt_set
 
 
-
-
-
-
+## Working example
+# ---------------- #
+# - rand_num = 7 - #
+# ---------------- #
+# convert.(Int64, rand_idx) = [7, 12, 7, 13, 18, 17, 6]   310  < δ  < 355    485 < δ < 545
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ HlyIIR    │ H1     │ 0.07    │ 2.5     │ 0.19    │ 2.6     │
+# │ 2   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
+# │ 3   │ HlyIIR    │ H1     │ 0.07    │ 2.5     │ 0.19    │ 2.6     │
+# │ 4   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
+# │ 5   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
+# │ 6   │ SrpR      │ S1     │ 0.003   │ 1.3     │ 0.01    │ 2.9     │
+# │ 7   │ BM3R1     │ B3     │ 0.01    │ 0.8     │ 0.26    │ 3.4     │
+specific_idx = [7, 12, 7, 13, 18, 17, 6]
+p_set_specific = []
+[push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
+gate_p_set_specific = gate_param_assign(p_set_specific...)
+δ = 545
+sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
+plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$δ")
+display(plt)
+# check cost function
+costtot = cost_bit1(sol, ts, up)
 
 
 
