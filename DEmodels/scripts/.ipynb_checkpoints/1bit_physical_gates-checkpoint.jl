@@ -228,11 +228,7 @@ end
 
 
 ## Verify the individual parameters
-# ---------------- #
-# - rand_num = 3 - #
-# ---------------- #
-# 1. example 1
-# convert.(Int64, rand_idx) = [18, 9, 17, 18, 18, 18, 18]    340 < δ < 430
+# convert.(Int64, rand_idx) = [18, 9, 17, 18, 18, 18, 18]    340<δ<430
 # df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
 # │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
 # │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
@@ -244,85 +240,15 @@ end
 # │ 5   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
 # │ 6   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
 # │ 7   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
-# 2. example 2
-# convert.(Int64, rand_idx) = [12, 16, 5, 12, 12, 12, 12]   380 < δ < 470
-# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
-# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
-# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
-# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
-# │ 1   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
-# │ 2   │ QacR      │ Q2     │ 0.03    │ 2.8     │ 0.21    │ 2.4     │
-# │ 3   │ BM3R1     │ B2     │ 0.005   │ 0.5     │ 0.15    │ 2.9     │
-# │ 4   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
-# │ 5   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
-# │ 6   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
-# │ 7   │ PhIF      │ P2     │ 0.02    │ 4.1     │ 0.13    │ 3.9     │
-
-# specific_idx = [18, 9, 17, 18, 18, 18, 18] # [12, 16, 5, 12, 12, 12, 12]
-specific_idx = [12, 16, 5, 12, 12, 12, 12]
+specific_idx = [18, 9, 17, 18, 18, 18, 18]
 p_set_specific = []
 [push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
 gate_p_set_specific = gate_param_assign(p_set_specific...)
-δ = 400
-sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
-plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$δ")
+sol, ts = run_prob_1bit(;init_relax = 5000., duration= 340, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
+plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt", ylims = (0.,3))
 display(plt)
 # check cost function
 costtot = cost_bit1(sol, ts, up)
-
-
-
-
-
-## test random selected 4 gate from para_s4 dataset to see if counter works.
-gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 4)
-# sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
-# dump(gate_p_set)
-all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)];up = mean(all_7_up_set);
-
-for dt in 200:5:500
-	sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
-	plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt")
-	ylims!((0.0,6))
-	display(plt)
-end
-
-@show convert.(Int64,rand_idx)
-@show df[convert.(Int64,rand_idx),:]
-
-
-
-## Working example
-# ---------------- #
-# - rand_num = 4 - #
-# ---------------- #
-# convert.(Int64, rand_idx) = [13, 16, 1, 3, 13, 13, 13]   375 < δ < 400
-# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
-# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
-# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
-# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
-# │ 1   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
-# │ 2   │ QacR      │ Q2     │ 0.03    │ 2.8     │ 0.21    │ 2.4     │
-# │ 3   │ AmeR      │ F1     │ 0.2     │ 3.8     │ 0.09    │ 1.4     │
-# │ 4   │ BetI      │ E1     │ 0.07    │ 3.8     │ 0.41    │ 2.4     │
-# │ 5   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
-# │ 6   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
-# │ 7   │ PhIF      │ P3     │ 0.02    │ 6.8     │ 0.23    │ 4.2     │
-specific_idx = [13, 16, 1, 3, 13, 13, 13]
-p_set_specific = []
-[push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
-gate_p_set_specific = gate_param_assign(p_set_specific...)
-δ = 390
-sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
-plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$δ")
-display(plt)
-# check cost function
-costtot = cost_bit1(sol, ts, up)
-
-
-
-
-
 
 ## test random selected 7 gate from para_s4 dataset to see if counter works.
 rand_idx_δ_set = []
@@ -384,3 +310,8 @@ dt_set
 #     #     break
 #     # end
 # end
+
+
+
+
+## Sampling two different random gates from library, 5 identical
