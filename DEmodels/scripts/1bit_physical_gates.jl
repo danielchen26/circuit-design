@@ -77,7 +77,7 @@ de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,
 ode_f1 = ODEFunction(de1)
 
 ## Generate gate parameters from library (E.coli & Yeast)
-function gate_p_set_gen(idx, df; shared = true)
+function gate_p_set_gen(idx, df; shared = true, rand_num = 7)
     if shared == true
         gate_p_set = gate_param_assign([0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
                                [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n],
@@ -88,15 +88,34 @@ function gate_p_set_gen(idx, df; shared = true)
                                [0.002, df[idx,:].up, df[idx,:].K, df[idx,:].n])
     elseif shared == "random"
         println("Will randomly select 7 index")
-        rand_idx = rand(1:nrow(df), 7)
+        rand_idx = rand(1:nrow(df), rand_num)
         println("Random index: ", rand_idx)
-        gate_p_set = gate_param_assign([0.002, df[rand_idx[1],:].up, df[rand_idx[1],:].K, df[rand_idx[1],:].n],
-                               [0.002, df[rand_idx[2],:].up, df[rand_idx[2],:].K, df[rand_idx[2],:].n],
-                               [0.002, df[rand_idx[3],:].up, df[rand_idx[3],:].K, df[rand_idx[3],:].n],
-                               [0.002, df[rand_idx[4],:].up, df[rand_idx[4],:].K, df[rand_idx[4],:].n],
-                               [0.002, df[rand_idx[5],:].up, df[rand_idx[5],:].K, df[rand_idx[5],:].n],
-                               [0.002, df[rand_idx[6],:].up, df[rand_idx[6],:].K, df[rand_idx[6],:].n],
-                               [0.002, df[rand_idx[7],:].up, df[rand_idx[7],:].K, df[rand_idx[7],:].n])
+		if rand_num < 7
+			@show rand_num
+			p_set = []
+			for i in 1:rand_num
+				push!(p_set,[df[rand_idx[i],:].dn, df[rand_idx[i],:].up, df[rand_idx[i],:].K, df[rand_idx[i],:].n])
+			end
+			@show p_set
+			@show fix_id = rand_idx[1]# i.e., once 3 random gates are selected, the rest 4 fours all defaultly use the first gates parameter.
+			for i in 1:7 - rand_num
+				push!(p_set,[df[fix_id,:].dn, df[fix_id,:].up, df[fix_id,:].K, df[fix_id,:].n])
+			end
+			@show p_set
+			gate_p_set = gate_param_assign(p_set...)
+			dump(gate_p_set)
+			return gate_p_set, vcat(rand_idx, fix_id*ones(7-rand_num))
+		elseif rand_num == 7
+        	gate_p_set = gate_param_assign([df[rand_idx[1],:].dn, df[rand_idx[1],:].up, df[rand_idx[1],:].K, df[rand_idx[1],:].n],
+                               [df[rand_idx[2],:].dn, df[rand_idx[2],:].up, df[rand_idx[2],:].K, df[rand_idx[2],:].n],
+                               [df[rand_idx[3],:].dn, df[rand_idx[3],:].up, df[rand_idx[3],:].K, df[rand_idx[3],:].n],
+                               [df[rand_idx[4],:].dn, df[rand_idx[4],:].up, df[rand_idx[4],:].K, df[rand_idx[4],:].n],
+                               [df[rand_idx[5],:].dn, df[rand_idx[5],:].up, df[rand_idx[5],:].K, df[rand_idx[5],:].n],
+                               [df[rand_idx[6],:].dn, df[rand_idx[6],:].up, df[rand_idx[6],:].K, df[rand_idx[6],:].n],
+                               [df[rand_idx[7],:].dn, df[rand_idx[7],:].up, df[rand_idx[7],:].K, df[rand_idx[7],:].n])
+							   return gate_p_set, rand_idx
+		end
+
     elseif shared == "gaussian" # the name can be changed, gaussion means the δ for the 7 parameter set should be close
         println("Make sure the given idx should be an array of length 7")
         gate_p_set = gate_param_assign([0.002, df[idx[1],:].up, df[idx[1],:].K, df[idx[1],:].n],
@@ -110,15 +129,16 @@ function gate_p_set_gen(idx, df; shared = true)
     return gate_p_set
 end
 
-@show gate_p_set = gate_p_set_gen(rand(), df; shared = "random")
+@show gate_p_set,rand_idx = gate_p_set_gen(rand(), df; shared = "random")
 dump(gate_p_set)
+@show rand_idx
 
 ## Run one example
 "Remember to change the inital control parameter index, here 31 instead of 7.
 31 because the 1bit counter contains 31 parameters, the control p hass the last index"
 function run_prob_1bit(;init_relax, duration,relax,signal, gate_p_set::gate_param_assign)
     u0 =  rand(1:22., length(ode_f1.syms))
-    Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(index = 31, Δ0 = init_relax, Δ = relax, δ = duration, A = signal, cycle = 3)
+    Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(index = 31, Δ0 = init_relax, Δ = relax, δ = duration, A = signal, cycle = 10)
     param = [ gate_p_set.g1...,
               gate_p_set.g2...,
               gate_p_set.g3...,
@@ -133,7 +153,7 @@ function run_prob_1bit(;init_relax, duration,relax,signal, gate_p_set::gate_para
 end
 
 
-# set the shared single parameter set index
+## set the shared single parameter set index 🔺
 idx = 1000
 idx_set = [1,2,3,4,5,6,7]
 gate_p_set = gate_p_set_gen(idx_set, dff, shared="gaussian")
@@ -157,10 +177,10 @@ function Switch(sol, idx::Array , Δ0, ts, t_id::Array )
 
     return G6_afs, G7_afs
 end
-  function Switch_cost(sol, idx::Array, Δ0, ts, T0)
+function Switch_cost(sol, idx::Array, Δ0, ts, T0)
     # G6 is HKCI, G7 is PhlF
     G6 =[];G7 =[];
-    for sw in 0:2:14
+    for sw in 0:2:14 # 💚changed 8 from 14
         B1_1, B1_2 = Switch(sol,idx, Δ0, ts, T0 .+ sw)
         # println("Bit: ", B1_1, B1_2)
         push!(G6, B1_1);     push!(G7, B1_2)
@@ -189,19 +209,106 @@ end
 ##
 
 
-## test random selected 7 gate from para_s4 dataset to see if counter works.
-gate_p_set = gate_p_set_gen(rand(), df; shared = "random")
+## test random selected 3 gate from para_s4 dataset to see if counter works.
+gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 3)
 # sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
-dump(gate_p_set)
-all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)]
-up = mean(all_7_up_set)
+# dump(gate_p_set)
+all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)];up = mean(all_7_up_set);
 
-dt_set = []
-for dt in 300:5:400
+for dt in 200:5:500
 	sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
-	# costtot = cost_bit1(sol, ts, up)
-	# @show costtot
-	# costtot == 0 ? push!(dt_set, dt) : nothing
-	plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = "$dt")
+	plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt")
+	ylims!((0.0,6))
 	display(plt)
 end
+
+@show convert.(Int64,rand_idx)
+@show df[convert.(Int64,rand_idx),:]
+
+
+
+## Verify the individual parameters
+# convert.(Int64, rand_idx) = [18, 9, 17, 18, 18, 18, 18]    340<δ<430
+# df[convert.(Int64, rand_idx), :] = 7×6 DataFrame
+# │ Row │ repressor │ RBS    │ dn      │ up      │ K       │ n       │
+# │     │ String    │ String │ Float64 │ Float64 │ Float64 │ Float64 │
+# ├─────┼───────────┼────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 1   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
+# │ 2   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+# │ 3   │ SrpR      │ S1     │ 0.003   │ 1.3     │ 0.01    │ 2.9     │
+# │ 4   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
+# │ 5   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
+# │ 6   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
+# │ 7   │ SrpR      │ S2     │ 0.003   │ 2.1     │ 0.04    │ 2.6     │
+specific_idx = [18, 9, 17, 18, 18, 18, 18]
+p_set_specific = []
+[push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
+gate_p_set_specific = gate_param_assign(p_set_specific...)
+sol, ts = run_prob_1bit(;init_relax = 5000., duration= 340, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
+plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt", ylims = (0.,3))
+
+## test random selected 7 gate from para_s4 dataset to see if counter works.
+rand_idx_δ_set = []
+gates_p_set = []
+
+for i in 1:30
+	gate_p_set,rand_idx = gate_p_set_gen(rand(), df; shared = "random")
+	dump(gate_p_set)
+	all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)]
+	up = mean(all_7_up_set)
+	for dt in 200:5:500
+		sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
+		costtot = cost_bit1(sol, ts, up)
+		@show costtot, dt
+		costtot == 0 ? push!(rand_idx_δ_set, [rand_idx,dt]) && push!(gates_p_set,gate_p_set) : nothing
+		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = "$dt,$rand_idx")
+		display(plt)
+	end
+end
+
+
+dt_set
+
+
+
+
+
+
+
+
+
+
+## test regular 1bit counter
+# function run_prob_1bit(;init_relax, duration,relax,signal,K,n,up)
+#     u0 =  rand(1:22., length(ode_f1.syms))
+#     Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(Δ0 = init_relax, Δ = relax, δ = duration, A = signal, cycle = 20)
+#     param = [up,0.002,K,n,0.025,0.025,p]
+#     prob0 = ODEProblem(ode_f1, u0, tspan, param)
+#     sol = solve(prob0, Tsit5(), callback = cb, tstops = ts, reltol = 1e-13, abstol = 1e-16)
+#     return sol, ts
+# end
+# df_1bit = DataFrame(K = Float64[], n = Float64[], δ =  Float64[], A =  Float64[], up = Float64[])
+# tt = []
+# @time @showprogress for K = 0.01: 0.05:1., n = 1.:0.2:10., δ = 10:5:500, A = 20., up = 1:1.:10 #@showprogress
+#     # for K = 0.011: 0.05:1., n = 1.5:0.5:10., δ = 250:10:350, A = 20., up = 1:0.5:10 # try broader range
+#     # K = 0.011: 0.02:0.1, n = 1.5:0.1:3., δ = 250:5:350, A = 20., up = 1:0.1:3, # original
+#     # solve DiffEq given parameters
+#     sol, ts = run_prob_1bit(;init_relax = 2500., duration=δ, relax=2000., signal=A, K=K, n=n, up = up)
+#     # Get cost for this parameters set
+#     costtot = cost_bit1(sol, ts, up)
+#     println("K:$K n:$n, δ:$δ, A:$A, up:$up\n")
+#     @show costtot
+#     costtot == 0 ? push!(df_1bit, [K, n, δ, A, up]) : nothing
+#
+#     # count example
+#     push!(tt,1.)
+#     @show sum(tt)
+#     # if sum(tt) >= 800.
+#     #     break
+#     # end
+# end
+
+
+
+
+## Sampling two different random gates from library, 5 identical

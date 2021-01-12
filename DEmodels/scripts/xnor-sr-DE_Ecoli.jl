@@ -30,7 +30,7 @@ mutable struct Param_E
 end
 
 # Import gate Parameters
-para = CSV.read("DEmodels/param_db/para_s4.csv");
+para = CSV.File("DEmodels/param_db/para_s4.csv") |> DataFrame
 HlyIIR = Param_E(Matrix(para)[7,:]...)
 LmrA = Param_E(Matrix(para)[10,:]...)
 SrpR = Param_E(Matrix(para)[20,:]...)
@@ -99,7 +99,7 @@ plot(sol0, lw = 2, ylims = (0, 22),
      xlabel = " Time steps", ylabel = "Concentration",
      color = [:blue :red],
      vars=[:m_PsrA,:m_BetI],
-     label =["Q" L"\overline Q"], # use the  mathemtical gate name
+     label =["Q" L"\widebar Q"], # use the  mathemtical gate name
      title = "Randomized initial conditions yield stable states")
 
 
