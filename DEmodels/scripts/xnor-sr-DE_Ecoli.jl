@@ -153,10 +153,11 @@ for i = 1:25
          dpi = 300)
 end
 plt2
-import PyPlot
-plt = plot(plt1,plt2,l = (1,2),size=(1000,350), top_margin = 1cm )
+# import PyPlot
+# plt = plot(plt1,plt2,l = (1,2),size=(1000,350), top_margin = 1mm )
+plt = plot(plt1,plt2,l = (1,2),size=(1000,350))
 PyPlot.suptitle("Randomized initial conditions yield stable states")
-savefig(plt,"./DEmodels/scripts/Paper_plots/2ss.png")
+# savefig(plt,"./DEmodels/scripts/Paper_plots/2ss.png")
 ## --Figure 4. phase plot----
 plt_phase = plot();pyplot()
 for i = 1:100
@@ -184,12 +185,12 @@ plt_phase
 l = @layout [a b; c]
 plt_c =plot(plt1,plt2,plt_phase, layout = l, size = (1000, 600))
 plt_c
-savefig(plt_c, "./DEmodels/scripts/Paper_plots/phase&2ss.png")
+# savefig(plt_c, "./DEmodels/scripts/Paper_plots/phase&2ss.png")
 
 ## === control with external inputs ===
 
 # --- Figure 5. ---
-using Sundials
+# using Sundials
 function cb_gen(ts, index, vars...)
     condition(u,t,integrator) = t in ts
     function affect!(integrator)
@@ -229,9 +230,9 @@ function init_control(; index = 3, Δ0 = 1000., Δ = 1000., δ = 270., cycle = 5
     return Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p
 end
 
-function run_prob_1bit(;init_relax, duration,relax,signal)
+function run_prob_1bit(;init_relax, duration,relax,signal,cycle)
     u0 =  rand(1:22., length(counter_ecoli.syms))
-    Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(Δ0 = init_relax, Δ = relax, δ = duration, A = signal)
+    Δ0, Δ, δ, cycle, A, tspan, time, signal, ts, cb, p = init_control(Δ0 = init_relax, Δ = relax, δ = duration, A = signal, cycle = cycle)
     # param = [up,0.002,K,n,0.025,0.025,p]
     param = [0.025,0.025,p]
     prob0 = ODEProblem(counter_ecoli, u0, tspan, param)
@@ -239,9 +240,10 @@ function run_prob_1bit(;init_relax, duration,relax,signal)
     return sol, ts
 end
 
-
+##
+println("δ range: [374, 463]")
 signal_strength = 10.0
-sol, ts = run_prob_1bit(;init_relax = 1500., duration=450.,relax=1000., signal=signal_strength);
+sol, ts = run_prob_1bit(;init_relax = 1500., duration=374.,relax=1000., signal=signal_strength, cycle=10);
 py = plot(sol, vars = [:m_PsrA,:m_BetI],lw = 1.5,
           xlabel = "time steps (min)", ylabel = "concentration",
           # label =["Gate 6: PsrA" "Gate 7: BetI"],

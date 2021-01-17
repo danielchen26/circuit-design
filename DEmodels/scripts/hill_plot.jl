@@ -1,7 +1,8 @@
 using Plots, LaTeXStrings;gr()
 #font = Plots.font("Helvetica", 12)
+Hill(dn, up, K, n, x) = dn + (up - dn) * K^n / (K^n + abs(x)^n)
 x = collect(0:0.1:10)
-plt = plot(x, Hill_shift.(2.,0.2,2,5.,x),lw=3, color = :darkgreen, labels = L"Hill(x) = dn + \frac{(up - dn) * K^{n}}{(K^{n} + x^{n})}",
+plt = plot(x, Hill.(2.,0.2,2,5.,x),lw=3, color = :darkgreen, labels = L"Hill(x) = dn + \frac{(up - dn) * K^{n}}{(K^{n} + x^{n})}",
     ylims = (0,2.2), tickfont = Plots.font("Helvetica", 12), guidefont = Plots.font("Helvetica", 12), legendfontsize = 13, legend = :right, fg_legend = :transparent)
 
 xlabel!("Input");ylabel!("Output")
