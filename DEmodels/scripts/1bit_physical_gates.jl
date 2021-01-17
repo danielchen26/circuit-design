@@ -647,8 +647,10 @@ p_unique = [];[push!(p_unique,[i.dn, i.up, i.K, i.n]) for i in eachrow(df_unique
 # p_unique = Any[[0.01, 3.9, 0.03, 4.0], [0.07, 4.3, 0.05, 1.7], [0.06, 3.8, 0.07, 1.6], [0.07, 3.8, 0.41, 2.4], [0.07, 2.5, 0.19, 2.6], [0.01, 2.4, 0.05, 2.7], [0.004, 2.1, 0.06, 2.8]]
 # p_unique = Any[[0.003, 1.3, 0.01, 2.9], [0.2, 3.8, 0.09, 1.4], [0.07, 4.3, 0.05, 1.7], [0.07, 3.8, 0.41, 2.4], [0.2, 5.9, 0.19, 1.8], [0.02, 4.1, 0.13, 3.9], [0.2, 2.2, 0.18, 2.1]]
 # p_unique = Any[[0.07, 4.3, 0.05, 1.7], [0.2, 5.9, 0.19, 1.8], [0.03, 2.8, 0.21, 2.4], [0.2, 2.2, 0.18, 2.1], [0.07, 2.5, 0.19, 2.6], [0.07, 3.8, 0.41, 2.4], [0.06, 3.8, 0.07, 1.6]]
+
 # below is cello parameter
 p_unique = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+
 
 function check_δ_range(p_unique, δ_set)
 	gate_p_unique = gate_param_assign(p_unique...)
@@ -658,16 +660,16 @@ function check_δ_range(p_unique, δ_set)
 		# g67max = minimum([maximum(sol[6,Int64(round(length(sol)/2)):end]),maximum(sol[7,Int64(round(length(sol)/2)):end])]);
 		# up = (g67min + g67max)/2
 		# @show up
+		println("δ values is:",δ)
 		costtot = cost_bit1(sol, ts)
 		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"],legendfontsize = 3, title = L"\delta=\ %$δ")
 		display(plt)
 		if length(δ_set) ==1
-			return plt
+			return plt, costtot
 		else
 			nothing
 		end
 	end
-
 end
 
 Hill(dn, up, K, n, x) = dn + (up - dn) * K^n / (K^n + abs(x)^n)
@@ -678,18 +680,18 @@ function plot_activation(xrange,gate)
 	xlabel!("Input");ylabel!("Output")
 end
 function check_gates_activation_function(xrange,p_unique)
-	plt_dynamics = check_δ_range(p_unique, 420)
+	plt_dynamics, costtot = check_δ_range(p_unique, 420)
 	plt_gates = [plot_activation(xrange, i) for i in p_unique]
 	plt = vcat(plt_dynamics,plt_gates)
 	# @show plt
 	l = @layout [a b; c d; e f; g h]
-	plot(plt...,layout = l)
+	return plot(plt...,layout = l), costtot
 	# title!("Activation functions")
 end
 
 check_gates_activation_function(0:0.01:2, p_unique)
 
-function check_constant_input(p_unique; t_on = 4000, xrange = 0:0.01:2)
+function check_all(p_unique; t_on = 4000, xrange = 0:0.01:2)
 	gate_p_set = gate_param_assign(p_unique...)
 	# test equilibrium for the example
 	u0 =  rand(1:22., length(ode_f1.syms))
@@ -730,17 +732,15 @@ function check_constant_input(p_unique; t_on = 4000, xrange = 0:0.01:2)
 	   legend = :topright,
 	   # ylims = (0.,5.),
 	   dpi = 300)
-	plt_activations = check_gates_activation_function(xrange,p_unique)
+	plt_activations,costtot = check_gates_activation_function(xrange,p_unique)
 	l = @layout [a b; c]
-	return plot(plt_ecoli_eq,plt_ecoli_const_input,plt_activations, layout = l,size=(750,800))
+	plt_check_all = plot(plt_ecoli_eq,plt_ecoli_const_input,plt_activations, layout = l,size=(800,800))
+	return plt_check_all, costtot
 end
-
-
-
 
 pp = check_δ_range(p_unique, 420)
 
-check_constant_input(p_unique, t_on = 3000, xrange = 0:0.01:1)
+plt_check_all, costtot = check_all(p_unique, t_on = 3000, xrange = 0:0.01:1)
 # check_constant_input(p_unique_cello)
 
 
@@ -764,6 +764,51 @@ check_constant_input(p_unique, t_on = 3000, xrange = 0:0.01:1)
 # PsrA = Param_E(Matrix(para)[14,:]...)
 # BetI = Param_E(Matrix(para)[3,:]...)
 
-# cello_set = [HlyIIR, LmrA, SrpR,BM3R1,PhIF,PsrA,BetI]
+# cello_set = [HlyIIR,LmrA,SrpR,BM3R1,PhIF,PsrA,BetI]
 # p_unique_cello =[]
 # [push!(p_unique_cello,[i.min, i.max, i.K, i.n]) for i in cello_set]
+
+
+# ===== Table:replace ======
+# if to replace 1 cello gate
+# │ 1   │ AmeR      │ F1     │ 0.2     │ 3.8     │ 0.09    │ 1.4     │
+# │ 2   │ AmtR      │ A1     │ 0.06    │ 3.8     │ 0.07    │ 1.6     │
+# │ 8   │ IcaRA     │ I1     │ 0.08    │ 2.2     │ 0.1     │ 1.4     │
+# │ 9   │ LitR      │ l1     │ 0.07    │ 4.3     │ 0.05    │ 1.7     │
+# │ 15  │ QacR      │ Q1     │ 0.01    │ 2.4     │ 0.05    │ 2.7     │
+# │ 16  │ QacR      │ Q2     │ 0.03    │ 2.8     │ 0.21    │ 2.4     │
+
+replace_gates = [[0.2  ,3.8  ,0.09 ,1.4 ],[0.06 ,3.8  ,0.07 ,1.6 ],[0.08 ,2.2  ,0.1  ,1.4 ],[0.07 ,4.3  ,0.05 ,1.7 ],[0.01 ,2.4  ,0.05 ,2.7 ],[0.03 ,2.8  ,0.21 ,2.4 ]]
+
+for i in replace_gates
+	@show i
+end
+
+# change 1 cello gate
+
+p_unique_cello = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+pp = check_δ_range(p_unique, 200:5:500)
+check_all(p_unique_cello1, t_on = 3000, xrange = 0:0.01:1)
+
+@show DataFrame(p_unique_cello)
+
+
+# test for each row in Table:replace above, if the replacement of one row in cello circuit is still able to produce a feasible counter.
+modi_1gate = []
+for i ∈ replace_gates
+	for j in 1:7
+		# @show i
+		modi = copy(p_unique_cello)
+		modi[j] = i
+		@show DataFrame(modi)
+		plt_check_all, costtot = check_all(modi, t_on = 3000, xrange = 0:0.01:1)
+		println("Cost function:", costtot)
+		display(plt_check_all)
+		if costtot == 0
+			push!(modi_1gate, DataFrame(modi))
+			savefig(plt_check_all, "./DEmodels/scripts/Paper_plots/physical_gate_cases/cello_replace_"*"$i"*"_"*"$j"*".png")
+		end
+		# @show DataFrame(modi)
+		# println("\n")
+	end
+end
