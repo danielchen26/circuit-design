@@ -214,7 +214,11 @@ function osci(G6,up)
     @show G6b1, G6b2, G6b1 .+ G6b2
     return sum(G6b1 .+ G6b2), sum(G6b1 .* G6b2) # comp should be 4, and sum should be 0
 end
-function cost_bit1(sol, ts, up)
+function cost_bit1(sol, ts) # modified to customize up values
+	g67min =  maximum([minimum(sol[6,Int64(round(length(sol)/2)):end]),minimum(sol[7,Int64(round(length(sol)/2)):end])]);
+	g67max = minimum([maximum(sol[6,Int64(round(length(sol)/2)):end]),maximum(sol[7,Int64(round(length(sol)/2)):end])]);
+	up = (g67min + g67max)/2
+	@show up
     G6, G7 = Switch_cost(sol, [6,7],1000.,ts, [1,2])
     comp6, dot6 = osci(G6,up); comp7, dot7 = osci(G7,up);
     if comp6 ==4 && comp7 == 4 && dot6 == 0 && dot7 == 0
@@ -642,14 +646,19 @@ p_unique = [];[push!(p_unique,[i.dn, i.up, i.K, i.n]) for i in eachrow(df_unique
 # p_unique = Any[[0.01, 2.4, 0.05, 2.7], [0.02, 4.1, 0.13, 3.9], [0.2, 2.2, 0.18, 2.1], [0.2, 5.9, 0.19, 1.8], [0.07, 4.3, 0.05, 1.7], [0.06, 3.8, 0.07, 1.6], [0.07, 2.5, 0.19, 2.6]]
 # p_unique = Any[[0.01, 3.9, 0.03, 4.0], [0.07, 4.3, 0.05, 1.7], [0.06, 3.8, 0.07, 1.6], [0.07, 3.8, 0.41, 2.4], [0.07, 2.5, 0.19, 2.6], [0.01, 2.4, 0.05, 2.7], [0.004, 2.1, 0.06, 2.8]]
 # p_unique = Any[[0.003, 1.3, 0.01, 2.9], [0.2, 3.8, 0.09, 1.4], [0.07, 4.3, 0.05, 1.7], [0.07, 3.8, 0.41, 2.4], [0.2, 5.9, 0.19, 1.8], [0.02, 4.1, 0.13, 3.9], [0.2, 2.2, 0.18, 2.1]]
-p_unique = Any[[0.07, 4.3, 0.05, 1.7], [0.2, 5.9, 0.19, 1.8], [0.03, 2.8, 0.21, 2.4], [0.2, 2.2, 0.18, 2.1], [0.07, 2.5, 0.19, 2.6], [0.07, 3.8, 0.41, 2.4], [0.06, 3.8, 0.07, 1.6]]
+# p_unique = Any[[0.07, 4.3, 0.05, 1.7], [0.2, 5.9, 0.19, 1.8], [0.03, 2.8, 0.21, 2.4], [0.2, 2.2, 0.18, 2.1], [0.07, 2.5, 0.19, 2.6], [0.07, 3.8, 0.41, 2.4], [0.06, 3.8, 0.07, 1.6]]
 # below is cello parameter
-# p_unique = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+p_unique = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
 
 function check_δ_range(p_unique, δ_set)
 	gate_p_unique = gate_param_assign(p_unique...)
 	for δ in δ_set
-		sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_unique,cycle =4);
+		sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_unique,cycle =10);
+		# g67min =  maximum([minimum(sol[6,Int64(round(length(sol)/2)):end]),minimum(sol[7,Int64(round(length(sol)/2)):end])]);
+		# g67max = minimum([maximum(sol[6,Int64(round(length(sol)/2)):end]),maximum(sol[7,Int64(round(length(sol)/2)):end])]);
+		# up = (g67min + g67max)/2
+		# @show up
+		costtot = cost_bit1(sol, ts)
 		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"],legendfontsize = 3, title = L"\delta=\ %$δ")
 		display(plt)
 		if length(δ_set) ==1
