@@ -651,9 +651,9 @@ p_unique = [];[push!(p_unique,[i.dn, i.up, i.K, i.n]) for i in eachrow(df_unique
 # below is cello parameter
 p_unique = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
 
-
 function check_δ_range(p_unique, δ_set)
 	gate_p_unique = gate_param_assign(p_unique...)
+	cost_set =[]
 	for δ in δ_set
 		sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_unique,cycle =10);
 		# g67min =  maximum([minimum(sol[6,Int64(round(length(sol)/2)):end]),minimum(sol[7,Int64(round(length(sol)/2)):end])]);
@@ -662,14 +662,17 @@ function check_δ_range(p_unique, δ_set)
 		# @show up
 		println("δ values is:",δ)
 		costtot = cost_bit1(sol, ts)
+		push!(cost_set,costtot)
 		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"],legendfontsize = 3, title = L"\delta=\ %$δ")
 		display(plt)
+		
 		if length(δ_set) ==1
 			return plt, costtot
 		else
 			nothing
 		end
 	end
+	return cost_set
 end
 
 Hill(dn, up, K, n, x) = dn + (up - dn) * K^n / (K^n + abs(x)^n)
@@ -738,7 +741,7 @@ function check_all(p_unique; t_on = 4000, xrange = 0:0.01:2)
 	return plt_check_all, costtot
 end
 
-pp = check_δ_range(p_unique, 420)
+cost_set = check_δ_range(p_unique, 420:5:450)
 
 plt_check_all, costtot = check_all(p_unique, t_on = 3000, xrange = 0:0.01:1)
 # check_constant_input(p_unique_cello)
@@ -784,9 +787,7 @@ replace_gates = [[0.2  ,3.8  ,0.09 ,1.4 ],[0.06 ,3.8  ,0.07 ,1.6 ],[0.08 ,2.2  ,
 p_unique_cello = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
 pp = check_δ_range(p_unique, 200:5:500)
 check_all(p_unique_cello1, t_on = 3000, xrange = 0:0.01:1)
-
 @show DataFrame(p_unique_cello)
-
 
 # test for each row in Table:replace above, if the replacement of one row in cello circuit is still able to produce a feasible counter.
 modi_1gate = []
@@ -808,20 +809,63 @@ for i ∈ replace_gates
 	end
 end
 
+## Genereate 7 circuits' δ ranges and choose the best δ with largest range.
+###########################################
+# 1. cello 
+p_unique1 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+# 2. cello_replace_[0.2, 3.8, 0.09, 1.4]_2
+p_unique2 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 3.8, 0.09, 1.4],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+# 3. cello_replace_[0.01, 2.4, 0.05, 2.7]_5
+p_unique3 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 2.4, 0.05, 2.7],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+# 4. cello_replace_[0.03, 2.8, 0.21, 2.4]_1
+p_unique4 = Any[[0.03, 2.8, 0.21, 2.4],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+# 5. cello_replace_[0.03, 2.8, 0.21, 2.4]_7
+p_unique5 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.03, 2.8, 0.21, 2.4]]
+# 6. cello_replace_[0.06, 3.8, 0.07, 1.6]_1
+p_unique6 = Any[[0.06, 3.8, 0.07, 1.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+# 7. cello_replace_[0.07, 4.3, 0.05, 1.7]_1
+p_unique7 = Any[[0.07, 4.3, 0.05, 1.7],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+p_unique_set = [p_unique1,p_unique2,p_unique3,p_unique4,p_unique5, p_unique6,p_unique7]
+
+# Generate all cost functions values for each circuit shown above (7 in total)
+all_cost = []
+for p_unique in p_unique_set
+	@show DataFrame(p_unique)
+	cost_set_i = check_δ_range(p_unique, 200:5:600)
+	push!(all_cost,cost_set_i)
+end 
+df_7circuits = DataFrame(all_cost)
+df_7circuits.δrange = 200:5:600
+showall(df_7circuits)
 
 
-
+# Generate the following table
+# │ Row │ Circuit │ δ_min │ δ_max │ δ_range │ δ_cv     │
+# │     │ Int64   │ Int64 │ Int64 │ Int64   │ Float64  │
+# ├─────┼─────────┼───────┼───────┼─────────┼──────────┤
+# │ 1   │ 1       │ 375   │ 460   │ 85      │ 0.184783 │
+# │ 2   │ 2       │ 360   │ 470   │ 110     │ 0.234043 │
+# │ 3   │ 3       │ 325   │ 505   │ 180     │ 0.356436 │
+# │ 4   │ 4       │ 300   │ 550   │ 250     │ 0.454545 │
+# │ 5   │ 5       │ 385   │ 455   │ 70      │ 0.153846 │
+# │ 6   │ 6       │ 320   │ 515   │ 195     │ 0.378641 │
+# │ 7   │ 7       │ 345   │ 490   │ 145     │ 0.295918 │
+range_set =[]
+for i in 1:7
+	range = df_7circuits[df_7circuits[:,i].==0,:].δrange[[1,end]]
+	push!(range_set,range)
+end
+range_set
+circuits_range = DataFrame(Circuit = 1:7, δ_min = [ i[1] for i in range_set], δ_max = [ i[2] for i in range_set])
+circuits_range.δ_range = circuits_range.δ_max - circuits_range.δ_min
+circuits_range.δ_cv = circuits_range.δ_range ./circuits_range.δ_max
+circuits_range
 
 
 
 
 ## Now test the case
-# j_func = generate_jacobian(de1)[2] # second is in-place
-# j! = eval(j_func)
-#
-# generate_function(j!)
-
-
+################################################################
 gate_p_set,df_unique = gate_p_set_gen(rand(), df; shared = "random", rand_num = 7)
 
 p_unique = [];[push!(p_unique,[i.dn, i.up, i.K, i.n]) for i in eachrow(df_unique[:, [:dn,:up,:K, :n]])]

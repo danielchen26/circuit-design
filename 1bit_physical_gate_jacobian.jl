@@ -1,3 +1,4 @@
+##
 using ModelingToolkit,OrdinaryDiffEq
 using CSV, DataFrames
 mutable struct gate_param_assign{T}
@@ -15,7 +16,7 @@ db = CSV.read("1Bit_DB_(K = 0.01: 0.05:1., n = 1.:0.2:10., δ = 10:5:500, A = 20
 df = CSV.read("./DEmodels/param_db/para_s4.csv",DataFrame)
 rename!(df, [:repressor, :RBS, :dn, :up, :K, :n], makeunique=true)
 
-
+##
 f(dn, up, K, n, x) = dn + (up - dn) * K^(n) / (K^(n) + abs(x)^(n))
 g(x) = γ * x
 
@@ -39,7 +40,7 @@ ode_f1 = ODEFunction(de1)
 ## solve equations
 p_unique = Any[[0.07, 4.3, 0.05, 1.7], [0.2, 5.9, 0.19, 1.8], [0.03, 2.8, 0.21, 2.4], [0.2, 2.2, 0.18, 2.1], [0.07, 2.5, 0.19, 2.6], [0.07, 3.8, 0.41, 2.4], [0.06, 3.8, 0.07, 1.6]]
 # the cello_set
-# p_unique = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+p_unique = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
 gate_p_set = gate_param_assign(p_unique...)
 # test equilibrium for the example
 u0 =  rand(1:22., length(ode_f1.syms))
@@ -57,12 +58,10 @@ sol0 = solve(prob0, Tsit5() )
 plot(sol0)
 
 ## calculate jacobian in two ways?🔴🔴
-# Question 1: 🔺
-# How to use ForwardDiff.jacobian on de1?
 using ForwardDiff
-ForwardDiff.jacobian(u -> ode_f1(u,param,tspan[end]),sol0[end])
-
-# ForwardDiff.jacobian(de1.eqs,[m1_LexA1(t), m1_IcaR(t), m1_CI1(t), m1_PsrA(t), m1_BM3RI(t), m1_HKCI(t), m1_PhlF(t)])
+jm = ForwardDiff.jacobian(u -> ode_f1(u,param,tspan[end]),sol0[end])
+using LinearAlgebra
+eigen(jm)
 
 # Question 2:🔺
 # how to use generate_jacobian and build_function to build jacobian function that can be evaluated with any given u and p?
