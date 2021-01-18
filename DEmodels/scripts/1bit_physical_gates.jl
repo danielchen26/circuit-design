@@ -780,12 +780,7 @@ plt_check_all, costtot = check_all(p_unique, t_on = 3000, xrange = 0:0.01:1)
 
 replace_gates = [[0.2  ,3.8  ,0.09 ,1.4 ],[0.06 ,3.8  ,0.07 ,1.6 ],[0.08 ,2.2  ,0.1  ,1.4 ],[0.07 ,4.3  ,0.05 ,1.7 ],[0.01 ,2.4  ,0.05 ,2.7 ],[0.03 ,2.8  ,0.21 ,2.4 ]]
 
-for i in replace_gates
-	@show i
-end
-
 # change 1 cello gate
-
 p_unique_cello = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
 pp = check_δ_range(p_unique, 200:5:500)
 check_all(p_unique_cello1, t_on = 3000, xrange = 0:0.01:1)
@@ -812,3 +807,58 @@ for i ∈ replace_gates
 		# println("\n")
 	end
 end
+
+
+
+
+
+
+
+
+## Now test the case
+# j_func = generate_jacobian(de1)[2] # second is in-place
+# j! = eval(j_func)
+#
+# generate_function(j!)
+
+
+gate_p_set,df_unique = gate_p_set_gen(rand(), df; shared = "random", rand_num = 7)
+
+p_unique = [];[push!(p_unique,[i.dn, i.up, i.K, i.n]) for i in eachrow(df_unique[:, [:dn,:up,:K, :n]])]
+@show p_unique
+
+
+@show df_unique
+@show filter(row -> row.repressor ∉ df_unique.repressor, df)
+
+replace_gates_df = filter(row -> row.repressor ∉ df_unique.repressor, df)
+replace_gates_df[:,[:dn,:up,:K, :n]]
+
+modi_1gate = []
+for i ∈ replace_gates_df
+	for j in 1:7
+		# @show i
+		modi = copy(p_unique)
+		modi[j] = i
+		@show DataFrame(modi)
+		plt_check_all, costtot = check_all(modi, t_on = 3000, xrange = 0:0.01:1)
+		println("Cost function:", costtot)
+		display(plt_check_all)
+		if costtot == 0
+			push!(modi_1gate, DataFrame(modi))
+			savefig(plt_check_all, "./DEmodels/scripts/Paper_plots/physical_gate_cases/test1_replace_"*"$i"*"_"*"$j"*".png")
+		end
+	end
+end
+
+
+
+
+
+
+
+
+
+
+
+## jacobian

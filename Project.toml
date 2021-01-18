@@ -1,5 +1,6 @@
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+Calculus = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataFramesMeta = "1313f7d8-7da2-5740-9ea0-a2ca25f37964"
 DataVoyager = "5721bf48-af8e-5845-8445-c9e18126e773"
@@ -25,5 +26,6 @@ PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 Queryverse = "612083be-0b0f-5412-89c1-4e7c75506a58"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 VegaLite = "112f6efa-9a02-5b7d-90c0-432ed331239a"
