@@ -254,10 +254,15 @@ py = plot(sol, vars = [:m_PsrA,:m_BetI],lw = 1.5,
           dpi = 400)
 # scatter!(py,ts,ones(length(ts)))
 ts1 = vcat(ts, sol.t[end])
-plot!(py,ts1, [0,signal_strength],
+plot!(py,ts1, push!(repeat([0,signal_strength],11),0),
       linetype=:steppre, linestyle = :dot,
       color = :purple,
       label = "Input signal")
+# # test below
+# plot(ts, repeat([0,signal_strength],11),
+#       linetype=:steppre, linestyle = :dot,
+#       color = :purple,
+#       label = "Input signal")
 # savefig(py, "./DEmodels/scripts/Paper_plots/1b_ecoli.png")
 ## ---Figure 6. ----- when constant signal is applied, we expected to see oscillation
 

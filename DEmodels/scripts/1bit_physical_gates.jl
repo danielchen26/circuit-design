@@ -650,12 +650,39 @@ p_unique = [];[push!(p_unique,[i.dn, i.up, i.K, i.n]) for i in eachrow(df_unique
 
 # below is cello parameter
 p_unique = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+# the best circuit for 1 bit that has the largest cv among 7 circuits.
+p_unique = Any[[0.03, 2.8, 0.21, 2.4],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
 
-function check_δ_range(p_unique, δ_set)
+
+
+function check_δ_range(p_unique, gate_out_names, δ_set; Δ0 = 1500, Δ = 1500, cycle = 8, legendfontsize = 3, signal = 10, Ylim = 15)
 	gate_p_unique = gate_param_assign(p_unique...)
+	if length(δ_set) ==1
+		sol, ts = run_prob_1bit(;init_relax = Δ0, duration = δ_set, relax = Δ, signal=signal, gate_p_set = gate_p_unique, cycle = cycle);
+		@show costtot = cost_bit1(sol, ts)
+		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],lw = 1.5,
+          		   xlabel = "time steps (min)", ylabel = "concentration",
+				#    label =["Q" L"\overline{Q}"],
+				#    label =["Q: PsrA" L"$\barQ$: BetI"], # note that these two specific gate need to match the p_unique order, double check !!
+				   label = ["Q: "*gate_out_names[1] L"$\barQ$: "*gate_out_names[2]],
+				   legendfontsize = legendfontsize, dpi = 500,
+				   title = "Circuit dynamics (e.g., signal duration: $δ_set min)")
+				#    title = L"Circuit\ dynamics\ (e.g., signal\ duration\ \delta :\ %$δ_set)")
+		ts1 = vcat(ts, sol.t[end])
+		plot!(plt,ts1, push!(repeat([0,signal],cycle+1),0),
+      			linetype=:steppre, linestyle = :dot,
+      			color = :purple,
+				label = "Input signal",
+				ylims =(0.,Ylim) )
+		display(plt)
+		return plt, costtot
+	else
+		nothing
+	end
+
 	cost_set =[]
 	for δ in δ_set
-		sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_unique,cycle =10);
+		sol, ts = run_prob_1bit(;init_relax = Δ0, duration = δ, relax = Δ, signal=20., gate_p_set = gate_p_unique, cycle = cycle);
 		# g67min =  maximum([minimum(sol[6,Int64(round(length(sol)/2)):end]),minimum(sol[7,Int64(round(length(sol)/2)):end])]);
 		# g67max = minimum([maximum(sol[6,Int64(round(length(sol)/2)):end]),maximum(sol[7,Int64(round(length(sol)/2)):end])]);
 		# up = (g67min + g67max)/2
@@ -663,14 +690,17 @@ function check_δ_range(p_unique, δ_set)
 		println("δ values is:",δ)
 		costtot = cost_bit1(sol, ts)
 		push!(cost_set,costtot)
-		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"],legendfontsize = 3, title = L"\delta=\ %$δ")
+		plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],
+				   label =["Q" L"\overline{Q}"],
+				   legendfontsize = legendfontsize, 
+				   title = L"Circuit\ dynamics (e.g., signal\ duration\ \delta :\ %$δ")
 		display(plt)
 		
-		if length(δ_set) ==1
-			return plt, costtot
-		else
-			nothing
-		end
+		# if length(δ_set) ==1
+		# 	return plt, costtot
+		# else
+		# 	nothing
+		# end
 	end
 	return cost_set
 end
@@ -678,7 +708,10 @@ end
 Hill(dn, up, K, n, x) = dn + (up - dn) * K^n / (K^n + abs(x)^n)
 function plot_activation(xrange,gate)
 	x = collect(xrange)
-	plt = plot(x, Hill.(gate...,x),lw=3, color = :darkgreen, labels = L"Hill(x) = dn + \frac{(up - dn) * K^{n}}{(K^{n} + x^{n})}",
+	plt = plot(x, Hill.(gate...,x),lw=3, 
+			   color = :darkgreen, 
+			   scale=:log10,
+			   labels = L"Hill(x) = dn + \frac{(up - dn) * K^{n}}{(K^{n} + x^{n})}",
 	ylims =[0,8],tickfont = Plots.font("Helvetica", 6), guidefont = Plots.font("Helvetica", 6), legendfontsize = 3, legend = false, fg_legend = :transparent)
 	xlabel!("Input");ylabel!("Output")
 end
@@ -691,8 +724,7 @@ function check_gates_activation_function(xrange,p_unique)
 	return plot(plt...,layout = l), costtot
 	# title!("Activation functions")
 end
-
-check_gates_activation_function(0:0.01:2, p_unique)
+# check_gates_activation_function(0:0.01:2, p_unique)
 
 function check_all(p_unique; t_on = 4000, xrange = 0:0.01:2)
 	gate_p_set = gate_param_assign(p_unique...)
@@ -741,7 +773,38 @@ function check_all(p_unique; t_on = 4000, xrange = 0:0.01:2)
 	return plt_check_all, costtot
 end
 
-cost_set = check_δ_range(p_unique, 420:5:450)
+plot_activation(0:0.01:2,p_unique[1])
+
+# ---------- test some plots for activation functions ↓
+x = 1e-3:0.01:100
+using GRUtils
+gr() # the following plot need gr() backend.
+# inspectdr()
+plot(x, Hill.(p_unique[2]...,x),lw=10, 
+			   color = colorant"#a0c54d", 
+			   xaxis=:log, yaxis=:log,
+			   thickness_scaling = 1.3,
+			#    bordercolor="white",
+			#    tickfontsize = [],
+			# ticklabels = [],
+
+			   framestyle = :box,
+			   grid=false,
+			#    foreground_color_tick = :green, 
+			#    foreground_color_minortick=:red, 
+			   minorgrid=true,
+			   minorticks = 10,
+			   labels = L"Hill(x) = dn + \frac{(up - dn) * K^{n}}{(K^{n} + x^{n})}",
+	ylims =[1e-2,8],tickfont = Plots.font("Helvetica", 6), guidefont = Plots.font("Helvetica", 6), legendfontsize = 3, legend = false, fg_legend = :transparent)
+	xlabel!("Input");ylabel!("Output")
+
+# using Colors
+# colorant"#a0c54d"
+# ---------- test some plots for activation functions ⤉
+
+# below is to save one of the best circuit among 7 physical_gate_cases and used in figure 5 in paper.
+plt_1_7_best, cost_set = check_δ_range(p_unique, 450, legendfontsize = 8, Ylim = 13)
+# savefig(plt_1_7_best,"./DEmodels/scripts/Paper_plots/physical_gate_cases/best1bit_from7(4th).png")
 
 plt_check_all, costtot = check_all(p_unique, t_on = 3000, xrange = 0:0.01:1)
 # check_constant_input(p_unique_cello)
@@ -809,23 +872,41 @@ for i ∈ replace_gates
 	end
 end
 
+
+
+
 ## Genereate 7 circuits' δ ranges and choose the best δ with largest range.
 ###########################################
-# 1. cello 
-p_unique1 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
-# 2. cello_replace_[0.2, 3.8, 0.09, 1.4]_2
-p_unique2 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 3.8, 0.09, 1.4],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
-# 3. cello_replace_[0.01, 2.4, 0.05, 2.7]_5
-p_unique3 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 2.4, 0.05, 2.7],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
-# 4. cello_replace_[0.03, 2.8, 0.21, 2.4]_1
-p_unique4 = Any[[0.03, 2.8, 0.21, 2.4],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
-# 5. cello_replace_[0.03, 2.8, 0.21, 2.4]_7
-p_unique5 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.03, 2.8, 0.21, 2.4]]
-# 6. cello_replace_[0.06, 3.8, 0.07, 1.6]_1
-p_unique6 = Any[[0.06, 3.8, 0.07, 1.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
-# 7. cello_replace_[0.07, 4.3, 0.05, 1.7]_1
-p_unique7 = Any[[0.07, 4.3, 0.05, 1.7],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
-p_unique_set = [p_unique1,p_unique2,p_unique3,p_unique4,p_unique5, p_unique6,p_unique7]
+function load_experiment_gates_circuits()
+	# 1. cello  gates in order: => [HlyIIR, LmrA, SrpR, BM3R1, PhIF, PsrA,BetI]
+	p_unique1 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+	circuit1_name = ["H1HlyIIR", "N1LmrA", "S4SrpR", "B3BM3R1", "P1PhIF", "R1PsrA","E1BetI"]
+	# 2. cello_replace_[0.2, 3.8, 0.09, 1.4]_2   🍏 LmrA ==> AmeR
+	p_unique2 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 3.8, 0.09, 1.4],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+	circuit2_name = ["H1HlyIIR", "F1AmeR", "S4SrpR", "B3BM3R1", "P1PhIF", "R1PsrA","E1BetI"]
+	# 3. cello_replace_[0.01, 2.4, 0.05, 2.7]_5  🍏 PhIF ==> QacR
+	p_unique3 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 2.4, 0.05, 2.7],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+	circuit3_name = ["H1HlyIIR", "N1LmrA", "S4SrpR", "B3BM3R1", "Q1QacR", "R1PsrA","E1BetI"]
+	# 4. 🔴 cello_replace_[0.03, 2.8, 0.21, 2.4]_1  🍏 HlyIIR ==> QacR
+	p_unique4 = Any[[0.03, 2.8, 0.21, 2.4],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+	circuit4_name = ["Q2QacR", "N1LmrA", "S4SrpR", "B3BM3R1", "P1PhIF", "R1PsrA","E1BetI"]
+	# 5. cello_replace_[0.03, 2.8, 0.21, 2.4]_7  🍏 BetI ==> QacR
+	p_unique5 = Any[[0.07, 2.5, 0.19, 2.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.03, 2.8, 0.21, 2.4]]
+	circuit5_name = ["H1HlyIIR", "N1LmrA", "S4SrpR", "B3BM3R1", "P1PhIF", "R1PsrA","Q2QacR"]
+	# 6. cello_replace_[0.06, 3.8, 0.07, 1.6]_1  🍏 HlyIIR ==> AmtR
+	p_unique6 = Any[[0.06, 3.8, 0.07, 1.6],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+	circuit6_name = ["A1AmtR", "N1LmrA", "S4SrpR", "B3BM3R1", "P1PhIF", "R1PsrA","E1BetI"]
+	# 7. cello_replace_[0.07, 4.3, 0.05, 1.7]_1  🍏 HlyIIR ==> LitR
+	p_unique7 = Any[[0.07, 4.3, 0.05, 1.7],[0.2, 2.2, 0.18, 2.1],[0.007, 2.1, 0.1, 2.8],[0.01, 0.8, 0.26, 3.4],[0.01, 3.9, 0.03, 4.0],[0.2, 5.9, 0.19, 1.8],[0.07, 3.8, 0.41, 2.4]]
+	circuit7_name = ["L1LitR", "N1LmrA", "S4SrpR", "B3BM3R1", "P1PhIF", "R1PsrA","E1BetI"]
+
+	p_unique_set = [p_unique1,p_unique2,p_unique3,p_unique4,p_unique5, p_unique6,p_unique7]
+	circuit_name = [circuit1_name, circuit2_name, circuit3_name, circuit4_name, circuit5_name, circuit6_name, circuit7_name]
+	return p_unique_set, circuit_name
+end 
+
+# load each circuit names and hill parameters for the 7 feasible counters with unique gates
+p_unique_set, circuit_name = load_experiment_gates_circuits()
 
 # Generate all cost functions values for each circuit shown above (7 in total)
 all_cost = []
@@ -835,11 +916,50 @@ for p_unique in p_unique_set
 	push!(all_cost,cost_set_i)
 end 
 df_7circuits = DataFrame(all_cost)
+df_7circuits = df_7circuits .==0
 df_7circuits.δrange = 200:5:600
 showall(df_7circuits)
+CSV.write("./df_7circuits_cost.csv", df_7circuits)
+
+new_df = CSV.File("./df_7circuits_cost.csv") |> DataFrame
+new_names = ["Circuit 1","Circuit 2","Circuit 3","Circuit 4","Circuit 5","Circuit 6","Circuit 7","δrange"]
+rename!(new_df, new_names)
+
+test = stack(new_df,1:7)
+new_test = test[test.value .==1,:]
+new_test |>
+	@vlplot(
+		width=500,
+		height=200,
+		mark={:boxplot},
+		x={"variable:o", axis={title="Circuit NO."} },
+		y={:δrange, scale = {domain = (290, 570)}},
+		color={"value", scale={domain=["variable"],range=["#393b79"]}, legend = nothing}
+		) |> save("7circuit_δ_boxplot.svg")
 
 
-# Generate the following table
+
+
+
+
+
+# Generate dynamics plots for 7 circuits(with unique experimental gates) with δ = 400
+for i in 1:7
+	p_unique = p_unique_set[i]
+	gate_out_names = circuit_name[i][[6,7]]
+	println("The circuit gates parameters: ", p_unique)
+	println("The gates for this circuit are: ", circuit_name[i])
+	println("The last output gates are: ", gate_out_names)
+	δ = 400
+	plt, costtot = check_δ_range(p_unique, gate_out_names, δ,legendfontsize = 10)
+	savefig(plt,pwd()*"/DEmodels/scripts/Paper_plots/physical_gate_cases/circuit_$i/dynamics_δ = $δ"*".png")
+	println("Cost: ", costtot)
+	println("\n")
+end
+
+
+# ======= Generate the following table, need `df_7circuits` from above ====
+
 # │ Row │ Circuit │ δ_min │ δ_max │ δ_range │ δ_cv     │
 # │     │ Int64   │ Int64 │ Int64 │ Int64   │ Float64  │
 # ├─────┼─────────┼───────┼───────┼─────────┼──────────┤
@@ -850,6 +970,7 @@ showall(df_7circuits)
 # │ 5   │ 5       │ 385   │ 455   │ 70      │ 0.153846 │
 # │ 6   │ 6       │ 320   │ 515   │ 195     │ 0.378641 │
 # │ 7   │ 7       │ 345   │ 490   │ 145     │ 0.295918 │
+
 range_set =[]
 for i in 1:7
 	range = df_7circuits[df_7circuits[:,i].==0,:].δrange[[1,end]]
@@ -862,9 +983,30 @@ circuits_range.δ_cv = circuits_range.δ_range ./circuits_range.δ_max
 circuits_range
 
 
+using VegaLite
+circuits_range |>
+        @vlplot(
+            width=500,
+            height=200,
+            mark={:boxplot, extent="min-max"},
+            x="Circuit:o",
+            y={:δ_range, axis={title="Duration δ"}})
 
 
-## Now test the case
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Now test the case | work here to select more feasible circuit other than cello one.
 ################################################################
 gate_p_set,df_unique = gate_p_set_gen(rand(), df; shared = "random", rand_num = 7)
 
