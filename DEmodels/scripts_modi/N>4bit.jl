@@ -350,55 +350,112 @@ end
 
 
 
+## generate 8 bit counter plots
 
-
+lg_size = 12
+DPI = 400
+y_scale = 2
 B1_plt = plot(sol, vars = [m1_HKCI, m1_PhlF],
                     label = ["Q1: output" L"$\bar{Q}$1: variable to feed back"],
-                    legend = :topright,
+                    # legend = :topright,
+                    legend =:outerright,
                     legendtitle = "The first bit counter",
-                    # ylims =(0.,Ylim)
+                    ylims =(0.,y_scale*param[1]),
+                    legendtitlefontsize = lg_size,
+                    dpi = DPI
                     )
-scatter!(B1_plt, ts, 2*ones(length(ts)),label="Signal")
+scatter!(B1_plt, ts, 2*ones(length(ts)),label="Signal", dpi = DPI)
 B2_plt = plot(sol, vars = [m2_HKCI, m2_PhlF],
             label = ["Q2: output" L"$\bar{Q}$2: variable to feed back"],
-            legend = :topright,
+            # legend = :topright,
+            legend =:outerright,
             legendtitle = "The second bit counter",
-            # ylims =(0.,Ylim)
+            ylims =(0.,y_scale*param[1]),
+            legendtitlefontsize = lg_size,
+            dpi = DPI
             )
 B3_plt = plot(sol, vars = [m3_HKCI, m3_PhlF],
             label = ["Q3: output" L"$\bar{Q}$3: variable to feed back"],
-            legend = :topright,
+            # legend = :topright,
+            legend =:outerright,
             legendtitle = "The third bit counter",
-            # ylims =(0.,Ylim)
+            ylims =(0.,y_scale*param[1]),
+            legendtitlefontsize = lg_size,
+            dpi = DPI
             )
 B4_plt = plot(sol, vars = [m4_HKCI, m4_PhlF],
             label = ["Q4: output" L"$\bar{Q}$4: variable to feed back"],
-            legend = :topright,
+            # legend = :topright,
+            legend =:outerright,
+            ylims =(0.,y_scale*param[1]),
             legendtitle = "The fourth bit counter",
+            legendtitlefontsize = lg_size,
+            dpi = DPI
             # ylims =(0.,Ylim)
             )
 
+Plots.scalefontsizes(0.9)
+plt1_4 = plot(B1_plt, B2_plt, B3_plt, B4_plt,
+    xlabel="Time", ylabel="Concentration",
+    layout = (4,1),
+    legendfontsize=lg_size,
+    size=(2000,1000))
+savefig(plt1_4,"./DEmodels/scripts_modi/Vis/plt1_4.png")
+
+
+
+
+
+
+
+
 B5_plt = plot(sol, vars = [m5_HKCI, m5_PhlF],
                     label = ["Q5: output" L"$\bar{Q}$5: variable to feed back"],
-                    legend = :topright,
+                    legend = :outerright,
                     legendtitle = "The fifth bit counter",
-                    # ylims =(0.,Ylim)
+                    ylims =(0.,y_scale*param[1]),
+                    legendtitlefontsize = lg_size,
+                    dpi = DPI
                     )
 B6_plt = plot(sol, vars = [m6_HKCI, m6_PhlF],
                     label = ["Q6: output" L"$\bar{Q}$6: variable to feed back"],
-                    legend = :topright,
+                    ylims =(0.,y_scale*param[1]),
+                    legend = :outerright,
                     legendtitle = "The sixth bit counter",
-                    # ylims =(0.,Ylim)
+                    legendtitlefontsize = lg_size,
+                    dpi = DPI
                     )
 B7_plt = plot(sol, vars = [m7_HKCI, m7_PhlF],
                     label = ["Q7: output" L"$\bar{Q}$7: variable to feed back"],
-                    legend = :topright,
+                    ylims =(0.,y_scale*param[1]),
+                    legend = :outerright,
                     legendtitle = "The seventh bit counter",
-                    # ylims =(0.,Ylim)
+                    legendtitlefontsize = lg_size,
+                    dpi = DPI
                     )
 B8_plt = plot(sol, vars = [m8_HKCI, m8_PhlF],
                     label = ["Q8: output" L"$\bar{Q}$8: variable to feed back"],
-                    legend = :topright,
-                    legendtitle = "The eigth bit counter",
-                    # ylims =(0.,Ylim)
+                    ylims =(0.,y_scale*param[1]),
+                    legend = :outerright,
+                    legendtitle = "The eighth bit counter",
+                    legendtitlefontsize = lg_size,
+                    dpi = DPI
                     )
+plt5_8 = plot(B5_plt, B6_plt, B7_plt, B8_plt,
+    xlabel="Time", ylabel="Concentration",
+    layout = (4,1),
+    legendfontsize=lg_size,
+    size=(2000,1000))
+
+savefig(plt5_8,"./DEmodels/scripts_modi/Vis/plt5_8.png")
+
+
+
+plt1_8 = plot(B1_plt, B2_plt, B3_plt, B4_plt, B5_plt, B6_plt, B7_plt, B8_plt,
+    link=:both,
+    xlabel="Time", ylabel="Concentration",
+    layout = (8,1),
+    legendfontsize=lg_size,
+    size=(2000,2000))
+
+savefig(plt1_8,"./DEmodels/scripts_modi/Vis/plt1_8.png")
