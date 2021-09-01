@@ -27,7 +27,7 @@ eqs1 = [
     D(m1_BM3RI) ~ ξ * hill(m1_PsrA)            - deg(m1_BM3RI),
     D(m1_HKCI ) ~ ξ * hill(m1_BM3RI + m1_PhlF) - deg(m1_HKCI),
     D(m1_PhlF ) ~ ξ * hill(m1_PsrA + m1_HKCI)  - deg(m1_PhlF)]
-de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF], [up,dn,K,n,γ,ξ,p])
+@named de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF], [up,dn,K,n,γ,ξ,p])
 ode_f1 = ODEFunction(de1)
 ##
 
@@ -224,8 +224,8 @@ gif(anim, "anim_fps15.gif", fps = 3)
 
 ## create inset plot
 begin
-    plt = plot(sol, vars = [6, 7],legend = :topright, label = ["G6" "G7"],
-                lw = 1.5, xlabel = "Time", ylabel = "Concentration", dpi = 500)
+    plt = plot(sol, vars = [6, 7],legend = :topright, label = ["Q1: output" L"$\bar{Q}$1: variable to feed back"],
+                lw = 1.5, xlabel = "Time", ylabel = "Concentration",  ylim = [0,1.5], dpi = 500)
     scatter!(plt, ts, 1*ones(length(ts)),label="Signal")
     lens!(plt, [19900.0, 20950.0], [0.0, 1.1],  xticks = 19900:200:20950, grid = nothing, title = "Zoomed transition",
     inset = (1, bbox(0.1, 0.2, 0.4, 0.2,:right,:bottom)), subplot = 2)

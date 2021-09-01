@@ -92,7 +92,7 @@ eqs1 = [
     D(m1_BM3RI) ~ ξ * hill(BM3RI..., m1_PsrA)            - deg(m1_BM3RI),
     D(m1_HKCI ) ~ ξ * hill(HKCI...,  m1_BM3RI + m1_PhlF)     - deg(m1_HKCI),
     D(m1_PhlF ) ~ ξ * hill(PhlF...,  m1_PsrA + m1_HKCI)      - deg(m1_PhlF)]
-de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF],
+@named de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF],
 [ LexA1..., IcaR..., CI1..., PsrA..., BM3RI..., HKCI..., PhlF..., γ, ξ, p])
 ode_f1 = ODEFunction(de1)
 
@@ -154,8 +154,7 @@ end
 # sol1 = solve(prob1, SSRootfind())
 # plot(sol1, vars = [:m_HKCI, :m_PhlF], lw = 2)
 
-sol, ts = run_prob_1bit(;init_relax = 20000., duration=270.,relax=20000.,
-                        signal=20.,K=0.081,n=2.81, up= 1.5);
+sol, ts = run_prob_1bit(;init_relax = 20000., duration=270.,relax=20000., signal=20.,K=0.081,n=2.81, up= 1.5);
 up= 1.5
 py = plot(sol, vars = [:m1_HKCI,:m1_PhlF],
           lw = 1.5, xlabel = "time", ylabel = "concentration",
@@ -384,7 +383,7 @@ idx = 1000
 idx_set = [1,2,3,4,5,6,7]
 gate_p_set = gate_p_set_gen(idx_set, dff, shared="gaussian")
 sol, ts = run_prob_1bit(;init_relax = 5000., duration=dff[Int64(median(idx_set)),:].δ, relax=5000., signal=20., gate_p_set);
-plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"])
+plot(sol, vars = [m1_HKCI, m1_PhlF],label =["Q" L"\overline{Q}"])
 
 
 
@@ -458,12 +457,16 @@ plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"])
 # @where(df_1b, @. (:K == 0.96) & (:n == 9.2) | (:K == 0.26) & (:n == 4.0)) # works
 
 
+## ===================== Run from here =====================
+## ===================== Run from here =====================
+## ===================== Run from here =====================
+
 
 
 "Generate a dataframe which has 7 randomly selected gates conditioned on a paticular δ"
 function df_7rand_gen(df_1b ; δ = 300)
-    dff = @where(df_1b, :δ .== δ)
-    idx_set = rand(1:nrow(dff), 7)
+    dff = @subset(df_1b, :δ .== δ) # subset of specific δ
+    idx_set = rand(1:nrow(dff), 7) # 7 random row indexes
     dff_rand = sort!(dff[idx_set,:])
     return dff, dff_rand, idx_set
 end
@@ -476,7 +479,7 @@ function df_7rand_δ_dist(; style = "histogram")
     dff_δ = @> begin
         df_1b
         # @where((:K .==0.96, :n .==9.2) .| (:K .==0.26, :n .==4.0))
-        @where(@. (:K == dff_rand.K[1]) & (:n == dff_rand.n[1]) | (:K == dff_rand.K[2]) & (:n == dff_rand.n[2]) |
+        @subset(@. (:K == dff_rand.K[1]) & (:n == dff_rand.n[1]) | (:K == dff_rand.K[2]) & (:n == dff_rand.n[2]) |
                 (:K == dff_rand.K[3]) & (:n == dff_rand.n[3]) | (:K == dff_rand.K[4]) & (:n == dff_rand.n[4]) |
                 (:K == dff_rand.K[5]) & (:n == dff_rand.n[5]) | (:K == dff_rand.K[6]) & (:n == dff_rand.n[6]) |
                 (:K == dff_rand.K[7]) & (:n == dff_rand.n[7]))
@@ -505,13 +508,19 @@ function df_7rand_δ_dist(; style = "histogram")
             x={:δ, bin={binned=true,step=10}},
             y={"count()",title = "Count"},
             color ={:point, title = "Gates (K, n)"},
-            row ={:point, title = "7 Gates δ distribution"}
+            row ={:point, title = "7 Gates δ distribution"},
+            # Below config is to adjust the fontsize of everything in the grouped plot 
+            # config = {
+            #     axis = {titleFontSize = 18, labelFontSize = 15},
+            #     legend ={titleFontSize = 25, padding =0, labelFontSize = 25},
+            #     header ={labelFontSize= 15, titleFontSize = 25}
+            #      }
             )  |> save("./7gates_plots/hist_delta.svg")
     end
     return dff, dff_rand, idx_set, dff_δ
 end
 dff, dff_rand, idx_set, dff_δ = df_7rand_δ_dist()
-pyplot()
+# pyplot()
 
 function gate_p_set_gen(idx, df; shared = true)
     if shared == true
@@ -546,24 +555,55 @@ function gate_p_set_gen(idx, df; shared = true)
     return gate_p_set
 end
 
-"Test if the 7 sampled random gates form a feasible counter"
+"Test if the 7 sampled random gates generate a feasible counter"
 function test()
     local gate_p_set = gate_p_set_gen(idx_set, dff, shared="7diff")
     local median_δ = dff[Int64(median(idx_set)),:].δ
     local sol, ts = run_prob_1bit(;init_relax = 5000., duration = median_δ, relax=5000., signal=20., gate_p_set);
-    p = plot(sol, vars = [:m1_HKCI, :m1_PhlF],
-            label =["Q" L"\overline{Q}"],
+    p = plot(sol, vars = [m1_HKCI, m1_PhlF],
+            label =["Q: output" L"$\bar{Q}$: variable to feed back"],
             xlabel = " Time steps", ylabel = "Concentration",
+            xtickfontsize=15, ytickfontsize=15,
+            legendfontsize= 10, guidefont=15,
+            ylim = maximum(dff.up)*1.2,
             dpi = 300)
     display(p)
     return p
 end
+
+# ==== one run test =====
+dff, dff_rand, idx_set, dff_δ = df_7rand_δ_dist()
 p = test()
-p |> save("./7gates_plots/1bit_exmple.png")
+# ===== if the above two line result looks good. Then save it to run the line in below
+p |> save("./7gates_plots/1bit_exmple_Lfont.png") 
+
+
+# In  df_7rand_δ_dist function, I added config section to adjust the font size of everything. This is already integrated
+#  plt = dff_δ |>
+        # @vlplot(
+        #     width=500,
+        #     height=60,
+        #     :bar,
+        #     x={:δ, bin={binned=true,step=10}},
+        #     y={"count()",title = "Count"},
+        #     color ={:point, title = "Gates (K, n)"},
+        #     row ={:point, title = "7 Gates δ distribution", titleFontSize = 30},
+        #     # title = "test",
+        #     config = {
+        #         axis = {titleFontSize = 18, labelFontSize = 15},
+        #         legend ={titleFontSize = 25, padding =0, labelFontSize = 25},
+        #         header ={labelFontSize= 15, titleFontSize = 25}
+        #          }
+        #     )
 
 
 
 
+
+
+## ===================== Run end from here =====================
+## ===================== Run end from here =====================
+## ===================== Run end from here =====================
 
 
 
@@ -639,7 +679,7 @@ function df_rand_set_gen(df_1b, ;δ =300)
         push!(rand_select_δ, df_i.δ)
     end
 
-    @time point_names = [string(vec(convert(Array, i))) for i in eachrow(dff_rand[[:n,:K]])]
+    @time point_names = [string(collect(row)) for row in eachrow(dff_rand[:,[:n,:K]])]
     rand_select_δ
 
     df_rand_set = []
@@ -711,6 +751,11 @@ function gates_δ_distribution(df_rand_set; style = "boxplot")
     end
 end
 
+
+
+
+dff, dff_rand, idx_set, dff_δ = df_7rand_δ_dist()
+df_rand_set = df_rand_set_gen(df_1b, ;δ =300)
 # example of 4 different plots for a given δ randomly generated 7 gates.
 plt_box = gates_δ_distribution(df_rand_set, style ="boxplot")
 plt_hist = gates_δ_distribution(df_rand_set, style ="histogram")
@@ -728,3 +773,4 @@ function nK_Knn(point; direction = "++", radius = 3, knn = 3)
 end
 
 nK_Knn([3.6,0.41])
+

@@ -63,7 +63,7 @@ deg(x) = γ * x
 @parameters t γ ξ p
 @parameters LexA1[1:4] IcaR[1:4] CI1[1:4] PsrA[1:4] BM3RI[1:4] HKCI[1:4] PhlF[1:4]
 @variables m1_LexA1(t) m1_IcaR(t) m1_CI1(t) m1_PsrA(t) m1_BM3RI(t) m1_HKCI(t) m1_PhlF(t)
-@derivatives D'~t
+D = Differential(t)
 eqs1 = [
     # Bit 1 =================
     D(m1_LexA1) ~ ξ * hill(LexA1..., m1_PhlF + p)            - deg(m1_LexA1),
@@ -73,7 +73,7 @@ eqs1 = [
     D(m1_BM3RI) ~ ξ * hill(BM3RI..., m1_PsrA)                - deg(m1_BM3RI),
     D(m1_HKCI ) ~ ξ * hill(HKCI...,  m1_BM3RI + m1_PhlF)     - deg(m1_HKCI),
     D(m1_PhlF ) ~ ξ * hill(PhlF...,  m1_PsrA + m1_HKCI)      - deg(m1_PhlF)]
-de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF],
+@named de1 = ODESystem(eqs1, t, [m1_LexA1, m1_IcaR, m1_CI1, m1_PsrA, m1_BM3RI, m1_HKCI,m1_PhlF],
 [ LexA1..., IcaR..., CI1..., PsrA..., BM3RI..., HKCI..., PhlF..., γ, ξ, p])
 ode_f1 = ODEFunction(de1)
 
@@ -242,8 +242,8 @@ gate_p_set, rand_idx = gate_p_set_gen(rand(), df; shared = "random", rand_num = 
 all_7_up_set = [getfield(gate_p_set,name)[2] for name in fieldnames(gate_param_assign)];up = mean(all_7_up_set);
 
 for dt in 200:5:500
-	sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20., gate_p_set);
-	plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt")
+	sol, ts = run_prob_1bit(;init_relax = 5000., duration= dt, relax=5000., signal=20.,cycle = 20, gate_p_set);
+	plt = plot(sol, vars = [m1_HKCI, m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$dt")
 	ylims!((0.0,6))
 	display(plt)
 end
@@ -291,8 +291,8 @@ p_set_specific = []
 [push!(p_set_specific,[df[specific_idx[i],:].dn, df[specific_idx[i],:].up, df[specific_idx[i],:].K, df[specific_idx[i],:].n]) for i in 1:7]
 gate_p_set_specific = gate_param_assign(p_set_specific...)
 δ = 400
-sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., gate_p_set = gate_p_set_specific);
-plt = plot(sol, vars = [:m1_HKCI, :m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$δ",dpi = 300)
+sol, ts = run_prob_1bit(;init_relax = 5000., duration= δ, relax=5000., signal=20., cycle = 20, gate_p_set = gate_p_set_specific);
+plt = plot(sol, vars = [m1_HKCI, m1_PhlF],label =["Q" L"\overline{Q}"], title = L"\delta=\ %$δ",dpi = 300)
 display(plt)
 # check cost function
 costtot = cost_bit1(sol, ts, up)
